@@ -3,15 +3,14 @@ import { getAnalytics } from "firebase/analytics";
 import { getAuth } from "firebase/auth";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAWzGJoo0wP9gBchCMWDnA8ZhmEAB4ZH0E",
-  authDomain: "creator-market-26aad.firebaseapp.com",
-  projectId: "creator-market-26aad",
-  storageBucket: "creator-market-26aad.firebasestorage.app",
-  messagingSenderId: "842402470770",
-  appId: "1:842402470770:web:f4ce9bb15f98b304b61beb",
-  measurementId: "G-H55E9P7XSV",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
-
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 const auth = getAuth(app); // <-- add this to use Google Sign-In later
