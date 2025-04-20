@@ -1,10 +1,21 @@
 import Sidebar from "../components/Sidebar";
 import Topbar from "../components/Topbar";
 import { Outlet } from "react-router-dom";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const DashboardLayout = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    if (isSidebarOpen) {
+      document.body.classList.add("overflow-hidden");
+    } else {
+      document.body.classList.remove("overflow-hidden");
+    }
+
+    // Cleanup on unmount
+    return () => document.body.classList.remove("overflow-hidden");
+  }, [isSidebarOpen]);
 
   return (
     <div className="flex min-h-screen text-theme bg-theme">

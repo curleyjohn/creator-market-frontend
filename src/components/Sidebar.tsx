@@ -55,7 +55,11 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
       {isOpen && (
         <div className="fixed inset-0 z-40 bg-black/50 md:hidden" onClick={onClose}>
           <aside
-            className="absolute left-0 top-0 h-full w-64 p-4 bg-sidebar text-theme border-r border-accent"
+            className={`
+              absolute top-0 left-0 h-full w-64 p-4 bg-sidebar text-theme border-r border-accent
+              transform transition-transform duration-300 ease-in-out
+              ${isOpen ? "translate-x-0" : "-translate-x-full"}
+            `}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Sidebar content (same as desktop) */}
