@@ -2,7 +2,46 @@
 @tailwind components;
 @tailwind utilities;
 
+/* -------------------------------
+   Global theme utility classes
+-------------------------------- */
+.bg-theme {
+  background-color: var(--bg);
+}
+
+.text-theme {
+  color: var(--text);
+}
+
+.bg-sidebar {
+  background-color: var(--sidebar-bg);
+}
+
+.bg-topbar {
+  background-color: var(--topbar-bg);
+}
+
+.text-topbar {
+  color: var(--topbar-text);
+}
+
+.bg-accent {
+  background-color: var(--accent);
+}
+
+.text-accent {
+  color: var(--accent-text);
+}
+
+.border-accent {
+  border-color: var(--accent);
+}
+
+/* -------------------------------
+   Theme Variants
+-------------------------------- */
 .theme-dark {
+  --bg: #2e2e2e;
   --sidebar-bg: #2e2e2e;
   --topbar-bg: #2e2e2e;
   --topbar-text: #ffffff;
@@ -12,6 +51,7 @@
 }
 
 .theme-grey {
+  --bg: #3a3a3a;
   --sidebar-bg: #3a3a3a;
   --topbar-bg: #3a3a3a;
   --topbar-text: #ffffff;
@@ -21,6 +61,7 @@
 }
 
 .theme-navy {
+  --bg: #0b1c2c;
   --sidebar-bg: #0b1c2c;
   --topbar-bg: #0b1c2c;
   --topbar-text: #e2e8f0;
@@ -30,8 +71,9 @@
 }
 
 .theme-blue {
+  --bg: #2e2e2e;
   --sidebar-bg: #2e2e2e;
-  --topbar-bg: #2e2e2e;
+  --topbar-bg: #1f1f1f;
   --topbar-text: #ffffff;
   --text: #ffffff;
   --accent: #3B82F6;
@@ -39,14 +81,26 @@
 }
 
 .theme-black {
+  --bg: #000000;
   --sidebar-bg: #000000;
-  --topbar-bg: #000000;
+  --topbar-bg: #0a0a0a;
   --topbar-text: #ffffff;
   --text: #ffffff;
   --accent: #3B82F6;
   --accent-text: #ffffff;
 }
 
+.theme-white {
+  --bg: #ffffff;
+  --sidebar-bg: #f9fafb;
+  --topbar-bg: #f3f4f6;
+  --topbar-text: #111827;
+  --text: #111827;
+  --accent: #3B82F6;
+  --accent-text: #ffffff;
+}
+
+/* Default text/background fallback */
 body {
   background-color: var(--bg);
   color: var(--text);

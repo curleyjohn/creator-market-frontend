@@ -1,4 +1,4 @@
-import { Listbox, Transition } from "@headlessui/react";
+import { Listbox, ListboxButton, ListboxOption, ListboxOptions, Transition } from "@headlessui/react";
 import { Fragment } from "react";
 import { CheckIcon, ChevronUpDownIcon } from "@heroicons/react/20/solid";
 
@@ -24,12 +24,12 @@ const ThemeDropdown = ({
     <div className="w-40">
       <Listbox value={selected} onChange={(t) => setSelectedTheme(t.value)}>
         <div className="relative">
-          <Listbox.Button className="relative w-full cursor-pointer rounded bg-[var(--accent)] py-2 pl-3 pr-10 text-left text-[var(--accent-text)]">
+          <ListboxButton className="relative w-full cursor-pointer rounded bg-accent py-2 pl-3 pr-10 text-left text-accent">
             <span className="block truncate">{selected.name}</span>
             <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
-              <ChevronUpDownIcon className="h-5 w-5 text-[var(--accent-text)]" />
+              <ChevronUpDownIcon className="h-5 w-5 text-accent" />
             </span>
-          </Listbox.Button>
+          </ListboxButton>
 
           <Transition
             as={Fragment}
@@ -37,13 +37,15 @@ const ThemeDropdown = ({
             leaveFrom="opacity-100"
             leaveTo="opacity-0"
           >
-            <Listbox.Options className="absolute mt-1 max-h-60 w-full overflow-auto rounded bg-white py-1 text-sm shadow-lg ring-1 ring-black/10 focus:outline-none z-50">
+            <ListboxOptions className="absolute mt-1 max-h-60 w-full overflow-auto rounded bg-theme py-1 text-sm shadow-lg ring-1 ring-[var(--accent)] focus:outline-none z-50">
               {themes.map((theme) => (
-                <Listbox.Option
+                <ListboxOption
                   key={theme.value}
                   value={theme}
                   className={({ active }) =>
-                    `relative cursor-pointer select-none py-2 pl-10 pr-4 ${active ? "bg-blue-100 text-black" : "text-gray-900"
+                    `relative cursor-pointer select-none py-2 pl-10 pr-4 ${active
+                      ? "bg-accent text-accent-text"
+                      : "text-theme"
                     }`
                   }
                 >
@@ -53,15 +55,15 @@ const ThemeDropdown = ({
                         {theme.name}
                       </span>
                       {selected && (
-                        <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-electricBlue">
+                        <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-accent">
                           <CheckIcon className="h-5 w-5" />
                         </span>
                       )}
                     </>
                   )}
-                </Listbox.Option>
+                </ListboxOption>
               ))}
-            </Listbox.Options>
+            </ListboxOptions>
           </Transition>
         </div>
       </Listbox>

@@ -3,7 +3,12 @@ import { NavLink } from "react-router-dom";
 import { signOut } from "firebase/auth";
 import { auth } from "../lib/firebase";
 
-const Sidebar = () => {
+interface SidebarProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
   const navItems = [
     { name: "Home", path: "/" },
     { name: "Portfolio", path: "/portfolio" },
@@ -20,44 +25,64 @@ const Sidebar = () => {
   };
 
   return (
-    <aside
-      className="w-64 p-4 h-screen flex flex-col justify-between"
-      style={{ backgroundColor: "var(--sidebar-bg)", color: "var(--text)" }}
-    >
-      <div>
-        <h1 className="text-xl font-bold mb-6" style={{ color: "var(--accent)" }}>
-          Creator Market
-        </h1>
-        <nav className="flex flex-col gap-2">
-          {navItems.map((item) => (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              className={({ isActive }) =>
-                `block px-4 py-2 rounded transition font-medium ${isActive
-                  ? "bg-[var(--accent)] text-[var(--accent-text)]"
-                  : "hover:bg-[var(--accent)] hover:text-[var(--accent-text)]"
-                }`
-              }
-            >
-              {item.name}
-            </NavLink>
-          ))}
-        </nav>
-      </div>
+    <>
+      <aside className="hidden md:flex w-64 p-4 h-screen flex-col justify-between bg-sidebar text-theme border-r border-accent">
+        <div>
+          <h1 className="text-xl font-bold mb-6 text-text">Creator Market</h1>
+          <nav className="flex flex-col gap-2">
+            {navItems.map((item) => (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                className={({ isActive }) =>
+                  `block px-4 py-2 rounded transition font-medium ${isActive
+                    ? "bg-accent text-accent"
+                    : "hover:bg-accent hover:text-accent"
+                  }`
+                }
+              >
+                {item.name}
+              </NavLink>
+            ))}
+          </nav>
+        </div>
 
-      <button
-        onClick={handleLogout}
-        className="mt-4 w-full py-2 px-4 rounded transition font-semibold"
-        style={{
-          backgroundColor: "var(--accent)",
-          color: "var(--accent-text)",
-        }}
-      >
-        Logout
-      </button>
-    </aside>
+        <button className="mt-4 w-full py-2 px-4 rounded transition font-semibold bg-accent text-accent" onClick={handleLogout}>
+          Logout
+        </button>
+      </aside>
 
+      {isOpen && (
+        <div className="fixed inset-0 z-40 bg-black/50 md:hidden" onClick={onClose}>
+          <aside
+            className="absolute left-0 top-0 h-full w-64 p-4 bg-sidebar text-theme border-r border-accent"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Sidebar content (same as desktop) */}
+            <h1 className="text-xl font-bold mb-6 text-text">Creator Market</h1>
+            <nav className="flex flex-col gap-2">
+              {navItems.map((item) => (
+                <NavLink
+                  key={item.path}
+                  to={item.path}
+                  className={({ isActive }) =>
+                    `block px-4 py-2 rounded transition font-medium ${isActive
+                      ? "bg-accent text-accent"
+                      : "hover:bg-accent hover:text-accent"
+                    }`
+                  }
+                >
+                  {item.name}
+                </NavLink>
+              ))}
+            </nav>
+            <button className="mt-4 w-full bg-accent text-accent-text rounded py-2" onClick={handleLogout}>
+              Logout
+            </button>
+          </aside>
+        </div>
+      )}
+    </>
   );
 };
 
