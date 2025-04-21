@@ -1,9 +1,9 @@
 import { createBrowserRouter } from "react-router-dom";
 import DashboardLayout from "../layouts/DashboardLayout";
-import Home from "../pages/Home";
 import Login from "../pages/Login";
 import ProtectedRoute from "./ProtectedRoute";
 import NotFound from "../pages/NotFound";
+import CreatorListPage from "../pages/CreatorListpage";
 
 const router = createBrowserRouter([
   {
@@ -18,10 +18,7 @@ const router = createBrowserRouter([
       </ProtectedRoute>
     ),
     children: [
-      {
-        index: true,
-        element: <Home />,
-      },
+      { path: "", element: <CreatorListPage /> }
     ],
   },
   {
