@@ -1,4 +1,4 @@
-import { calculatePrice } from "./price";
+import { calculateFinalPrice } from "./price";
 
 export const fetchYouTubeCreators = async (channelIds: string[]) => {
   const apiKey = process.env.REACT_APP_YOUTUBE_API_KEY;
@@ -19,6 +19,14 @@ export const fetchYouTubeCreators = async (channelIds: string[]) => {
     subscribers: Number(channel.statistics.subscriberCount),
     views: Number(channel.statistics.viewCount),
     isLive: false, // YouTube API doesn't include live status here
-    price: calculatePrice(Number(channel.statistics.subscriberCount), Number(channel.statistics.viewCount)),
+    price: calculateFinalPrice({
+      subscribers: Number(channel.statistics.subscriberCount),
+      newSubscribers: 0,
+      newViews: Number(channel.statistics.viewCount),
+      newComments: 0,
+      postedThisWeek: false,
+      totalBuys: 0,
+      totalSells: 0,
+    }),
   }));
 };

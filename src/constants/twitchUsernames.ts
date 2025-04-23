@@ -1,5 +1,5 @@
 export const TWITCH_USERNAMES = [
-  "xqc",
-  "pokimane",
-  "ninja",
+  "mrbeast6000",
+  "kaicenat",
+  "ishowspeed",
 ];

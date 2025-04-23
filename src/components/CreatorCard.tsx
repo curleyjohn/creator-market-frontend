@@ -31,7 +31,7 @@ const CreatorCard = ({ creator }: { creator: Creator }) => {
         )}
       </div>
       <div className="mt-2 px-3 py-1 bg-accent text-accent-text rounded-full text-sm font-medium">
-        ${creator.price.toFixed(2)}
+        {creator.price.toFixed(2)} CC
       </div>
     </div>
   );

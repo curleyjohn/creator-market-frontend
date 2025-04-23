@@ -1,4 +1,4 @@
-import { calculatePrice } from "./price";
+import { calculateFinalPrice } from "./price";
 
 let cachedAccessToken: string | null = null;
 
@@ -44,7 +44,15 @@ export const fetchTwitchCreators = async (usernames: string[]) => {
       subscribers: 0, // Twitch doesn't expose subs publicly
       views: Number(user.view_count),
       isLive: false, // We'll do this in another step
-      price: calculatePrice(0, user.view_count),
+      price: calculateFinalPrice({
+        subscribers: 0,
+        newSubscribers: 0,
+        newViews: Number(user.view_count),
+        newComments: 0,
+        postedThisWeek: false,
+        totalBuys: 0,
+        totalSells: 0,
+      }),
     }));
   } catch (error) {
     console.log('Twitch error: ', error);
