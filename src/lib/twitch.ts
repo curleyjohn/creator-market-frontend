@@ -1,4 +1,6 @@
 import { calculateFinalPrice } from "./price";
+import { db } from "./firebase";
+import { doc, getDoc, setDoc } from "firebase/firestore";
 
 let cachedAccessToken: string | null = null;
 
@@ -14,10 +16,10 @@ export const getTwitchAccessToken = async () => {
       method: "POST",
     }
   );
+
   const data = await res.json();
   cachedAccessToken = data.access_token;
   return cachedAccessToken;
-
 };
 
 export const fetchTwitchCreators = async (usernames: string[]) => {
@@ -36,26 +38,67 @@ export const fetchTwitchCreators = async (usernames: string[]) => {
 
     const data = await res.json();
 
-    return data.data.map((user: any) => ({
-      id: user.id,
-      name: user.display_name,
-      avatar: user.profile_image_url,
-      platform: "twitch",
-      subscribers: 0, // Twitch doesn't expose subs publicly
-      views: Number(user.view_count),
-      isLive: false, // We'll do this in another step
-      price: calculateFinalPrice({
-        subscribers: 0,
-        newSubscribers: 0,
-        newViews: Number(user.view_count),
-        newComments: 0,
-        postedThisWeek: false,
-        totalBuys: 0,
-        totalSells: 0,
-      }),
-    }));
+    const creators = await Promise.all(
+      data.data.map(async (user: any) => {
+        const id = user.id;
+        const name = user.display_name;
+        const avatar = user.profile_image_url;
+        const views = Number(user.view_count);
+
+        const creatorRef = doc(db, "creators", id);
+        const creatorSnap = await getDoc(creatorRef);
+
+        let totalBuys = 0;
+        let totalSells = 0;
+
+        if (creatorSnap.exists()) {
+          const existing = creatorSnap.data();
+          totalBuys = existing?.buys ?? 0;
+          totalSells = existing?.sells ?? 0;
+        }
+
+        const price = calculateFinalPrice({
+          subscribers: 0,
+          newSubscribers: 0,
+          newViews: views,
+          newComments: 0,
+          postedThisWeek: false,
+          totalBuys,
+          totalSells,
+        });
+
+        await setDoc(
+          creatorRef,
+          {
+            id,
+            name,
+            platform: "twitch",
+            subscribers: 0,
+            views,
+            price,
+            buys: totalBuys,
+            sells: totalSells,
+            lastUpdated: new Date(),
+          },
+          { merge: true }
+        );
+
+        return {
+          id,
+          name,
+          avatar,
+          platform: "twitch",
+          subscribers: 0,
+          views,
+          isLive: false,
+          price,
+        };
+      })
+    );
+
+    return creators;
   } catch (error) {
-    console.log('Twitch error: ', error);
+    console.log("Twitch error: ", error);
     return [];
   }
 };

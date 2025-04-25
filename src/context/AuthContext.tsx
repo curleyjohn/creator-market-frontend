@@ -21,7 +21,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       setLoading(true);
       if (firebaseUser) {
-        // await saveUserToFirestore(firebaseUser);
+        await saveUserToFirestore(firebaseUser);
         setUser(firebaseUser);
       } else {
         setUser(null);

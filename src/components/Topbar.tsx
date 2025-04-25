@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import ThemeDropdown from "./ThemeDropdown";
+import { getDoc, doc } from "firebase/firestore";
+import { db } from "../lib/firebase";
 
 interface TopbarProps {
   onMenuClick: () => void;
@@ -16,6 +18,7 @@ const themes = [
 
 const Topbar = ({ onMenuClick }: TopbarProps) => {
   const { user } = useAuth();
+  const [balance, setBalance] = useState<number | null>(null);
 
   const [selectedTheme, setSelectedTheme] = useState(() => {
     return localStorage.getItem("theme") ?? "theme-dark";
@@ -26,8 +29,24 @@ const Topbar = ({ onMenuClick }: TopbarProps) => {
     localStorage.setItem("theme", selectedTheme);
   }, [selectedTheme]);
 
+  useEffect(() => {
+    const fetchBalance = async () => {
+      if (!user?.uid) return;
+      const ref = doc(db, "users", user.uid);
+      const snap = await getDoc(ref);
+      const data = snap.data();
+      setBalance(data?.balance ?? 0);
+    };
+    fetchBalance();
+  }, [user?.uid]);
+
   return (
     <header className="w-full flex justify-end items-center gap-4 py-4 px-6 border-b bg-topbar text-topbar border-accent">
+      {balance !== null && (
+        <div className="text-sm font-medium text-[var(--text)] bg-[var(--sidebar-bg)] px-3 py-1 rounded-full border border-[var(--accent)]">
+          💰 {balance.toLocaleString()} CC
+        </div>
+      )}
       {/* Mobile menu button */}
       <button className="md:hidden" onClick={onMenuClick}>
         <svg

@@ -4,6 +4,8 @@ import Login from "../pages/Login";
 import ProtectedRoute from "./ProtectedRoute";
 import NotFound from "../pages/NotFound";
 import CreatorListPage from "../pages/CreatorListpage";
+import TransactionsPage from "../pages/TransactionPage";
+import PortfolioPage from "../pages/PortfolioPage";
 
 const router = createBrowserRouter([
   {
@@ -18,7 +20,9 @@ const router = createBrowserRouter([
       </ProtectedRoute>
     ),
     children: [
-      { path: "", element: <CreatorListPage /> }
+      { path: "", element: <CreatorListPage /> },
+      { path: "transactions", element: <TransactionsPage /> },
+      { path: "portfolio", element: <PortfolioPage /> }
     ],
   },
   {

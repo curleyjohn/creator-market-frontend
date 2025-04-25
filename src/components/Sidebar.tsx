@@ -12,6 +12,7 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
   const navItems = [
     { name: "Home", path: "/" },
     { name: "Portfolio", path: "/portfolio" },
+    { name: "Transactions", path: "/transactions" },
     { name: "Leaderboard", path: "/leaderboard" },
   ];
 
