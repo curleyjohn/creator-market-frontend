@@ -11,7 +11,9 @@ ReactDOM.createRoot(document.getElementById("root") as HTMLElement).render(
   <React.StrictMode>
     <ThemeProvider>
       <AuthProvider>
-        <RouterProvider router={router} />
+        <div className="tracking-wider">
+          <RouterProvider router={router} />
+        </div>
       </AuthProvider>
     </ThemeProvider>
   </React.StrictMode>

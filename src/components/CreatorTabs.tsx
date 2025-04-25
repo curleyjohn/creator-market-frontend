@@ -16,7 +16,7 @@ const CreatorTabs = () => {
 
   const [activeTab, setActiveTab] = useState<TabType>("YouTube");
   const [loading, setLoading] = useState(false);
-  const [portfolioById, setPortfolioById] = useState<{ [creatorId: string]: { quantity: number } }>({});
+  const [portfolioById, setPortfolioById] = useState<{ [creatorId: string]: { quantity: number; averageBuyPrice: number | null } }>({});
   const userId = user?.uid;
 
   const [youtubeCreators, setYouTubeCreators] = useState<any>([]);
@@ -49,10 +49,10 @@ const CreatorTabs = () => {
       const ref = collection(db, "users", user.uid, "portfolio");
       const snap = await getDocs(ref);
 
-      const result: { [creatorId: string]: { quantity: number } } = {};
+      const result: { [creatorId: string]: { quantity: number, averageBuyPrice: number | null } } = {};
       snap.forEach((doc) => {
         const data = doc.data();
-        result[doc.id] = { quantity: data.quantity };
+        result[doc.id] = { quantity: data.quantity, averageBuyPrice: data.averageBuyPrice };
       });
 
       setPortfolioById(result);
@@ -88,7 +88,12 @@ const CreatorTabs = () => {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
           {userId && creators.map((creator: any) => (
-            <CreatorCard key={`${creator.platform}-${creator.id}`} creator={creator} userId={user?.uid} ownedQuantity={portfolioById[creator.id]?.quantity || 0} />
+            <CreatorCard
+              key={`${creator.platform}-${creator.id}`}
+              creator={creator} userId={user?.uid}
+              ownedQuantity={portfolioById[creator.id]?.quantity || 0}
+              averageBuyPrice={portfolioById[creator.id]?.averageBuyPrice || null}
+            />
           ))}
         </div>
       )}

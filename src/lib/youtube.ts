@@ -1,6 +1,12 @@
 import { calculateFinalPrice } from "./price";
 import { db } from "./firebase";
-import { getDoc, doc, setDoc } from "firebase/firestore";
+import {
+  collectionGroup,
+  getDocs,
+  getDoc,
+  doc,
+  setDoc
+} from "firebase/firestore";
 
 export const fetchYouTubeCreators = async (channelIds: string[]) => {
   const apiKey = process.env.REACT_APP_YOUTUBE_API_KEY;
@@ -12,6 +18,18 @@ export const fetchYouTubeCreators = async (channelIds: string[]) => {
 
   if (!data.items) throw new Error("No creators found");
 
+  // 🔹 STEP 1: Get owner counts
+  const portfolioSnap = await getDocs(collectionGroup(db, "portfolio"));
+  const ownerMap: { [creatorId: string]: number } = {};
+
+  portfolioSnap.forEach((doc) => {
+    const d = doc.data();
+    if (d.creatorId && d.quantity > 0) {
+      ownerMap[d.creatorId] = (ownerMap[d.creatorId] || 0) + 1;
+    }
+  });
+
+  // 🔹 STEP 2: Process each creator
   const creators = await Promise.all(
     data.items.map(async (channel: any) => {
       const id = channel.id;
@@ -32,7 +50,6 @@ export const fetchYouTubeCreators = async (channelIds: string[]) => {
         totalSells = creatorData?.sells ?? 0;
       }
 
-      // ✅ Calculate price using latest YouTube data + stored market activity
       const price = calculateFinalPrice({
         subscribers,
         newSubscribers: 0,
@@ -43,18 +60,25 @@ export const fetchYouTubeCreators = async (channelIds: string[]) => {
         totalSells,
       });
 
-      // ✅ Save or update the creator with recalculated price
-      await setDoc(creatorRef, {
-        id,
-        name,
-        platform: "youtube",
-        subscribers,
-        views,
-        price,
-        buys: totalBuys,
-        sells: totalSells,
-        lastUpdated: new Date(),
-      }, { merge: true });
+      const ownerCount = ownerMap[id] || 0;
+
+      // 🔹 STEP 3: Save to Firestore (if needed)
+      await setDoc(
+        creatorRef,
+        {
+          id,
+          name,
+          platform: "youtube",
+          subscribers,
+          views,
+          price,
+          buys: totalBuys,
+          sells: totalSells,
+          ownerCount,
+          lastUpdated: new Date(),
+        },
+        { merge: true }
+      );
 
       return {
         id,
@@ -65,6 +89,7 @@ export const fetchYouTubeCreators = async (channelIds: string[]) => {
         views,
         isLive: false,
         price,
+        ownerCount,
       };
     })
   );

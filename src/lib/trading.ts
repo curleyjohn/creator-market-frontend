@@ -35,7 +35,6 @@ export const buyCreator = async ({
   const userData = userSnap.data();
   const currentBalance = userData.balance;
 
-  // Fetch creator from Firestore or use fallback
   const creatorRef = doc(db, "creators", creator.id);
   const creatorSnap = await getDoc(creatorRef);
 
@@ -56,11 +55,11 @@ export const buyCreator = async ({
   const buys = creatorSnap.exists() ? creatorSnap.data().buys || 0 : 0;
   const sells = creatorSnap.exists() ? creatorSnap.data().sells || 0 : 0;
 
-  // Calculate price
+  // Calculate live price
   const price = calculateFinalPrice({
     subscribers: creator.subscribers,
-    newSubscribers: 0, // optional for now
-    newViews: creator.views, // or just 0 for static pricing
+    newSubscribers: 0,
+    newViews: creator.views,
     postedThisWeek: false,
     totalBuys: buys,
     totalSells: sells,
@@ -70,23 +69,26 @@ export const buyCreator = async ({
 
   if (currentBalance < totalCost) throw new Error("Insufficient balance");
 
-  // 1. Deduct balance
+  // 1. Deduct user balance
   await updateDoc(userRef, {
     balance: currentBalance - totalCost,
   });
 
-  // 2. Update portfolio
+  // 2. Update portfolio (average buy price logic here)
   const portfolioRef = doc(db, "users", userId, "portfolio", creator.id);
   const portfolioSnap = await getDoc(portfolioRef);
 
   if (portfolioSnap.exists()) {
     const existing = portfolioSnap.data();
-    const newQuantity = existing.quantity + quantity;
-    const newAvg = ((existing.averageBuyPrice * existing.quantity) + totalCost) / newQuantity;
+    const oldQuantity = existing.quantity || 0;
+    const oldAverage = existing.averageBuyPrice || 0;
+
+    const newQuantity = oldQuantity + quantity;
+    const newAverageBuyPrice = ((oldAverage * oldQuantity) + (price * quantity)) / newQuantity;
 
     await updateDoc(portfolioRef, {
       quantity: newQuantity,
-      averageBuyPrice: parseFloat(newAvg.toFixed(2)),
+      averageBuyPrice: parseFloat(newAverageBuyPrice.toFixed(2)),
     });
   } else {
     await setDoc(portfolioRef, {
@@ -94,7 +96,7 @@ export const buyCreator = async ({
       name: creator.name,
       platform: creator.platform,
       quantity,
-      averageBuyPrice: price,
+      averageBuyPrice: parseFloat(price.toFixed(2)),
     });
   }
 
@@ -109,22 +111,16 @@ export const buyCreator = async ({
     timestamp: serverTimestamp(),
   });
 
-  // 4. Update creator market data
+  // 4. Update creator stats
   await setDoc(
     creatorRef,
     {
-      id: creator.id,
-      name: creator.name,
-      platform: creator.platform,
-      subscribers: creator.subscribers,
-      views: creator.views,
       buys: increment(quantity),
       lastUpdated: serverTimestamp(),
     },
     { merge: true }
   );
 };
-
 
 export const sellCreator = async ({
   userId,

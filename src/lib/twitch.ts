@@ -1,6 +1,12 @@
 import { calculateFinalPrice } from "./price";
 import { db } from "./firebase";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import {
+  doc,
+  getDoc,
+  setDoc,
+  collectionGroup,
+  getDocs
+} from "firebase/firestore";
 
 let cachedAccessToken: string | null = null;
 
@@ -38,6 +44,17 @@ export const fetchTwitchCreators = async (usernames: string[]) => {
 
     const data = await res.json();
 
+    // 🔹 STEP 1: Fetch all user portfolio items to compute owner counts
+    const portfolioSnap = await getDocs(collectionGroup(db, "portfolio"));
+    const ownerMap: { [creatorId: string]: number } = {};
+
+    portfolioSnap.forEach((doc) => {
+      const d = doc.data();
+      if (d.creatorId && d.quantity > 0) {
+        ownerMap[d.creatorId] = (ownerMap[d.creatorId] || 0) + 1;
+      }
+    });
+
     const creators = await Promise.all(
       data.data.map(async (user: any) => {
         const id = user.id;
@@ -67,6 +84,8 @@ export const fetchTwitchCreators = async (usernames: string[]) => {
           totalSells,
         });
 
+        const ownerCount = ownerMap[id] || 0;
+
         await setDoc(
           creatorRef,
           {
@@ -78,6 +97,7 @@ export const fetchTwitchCreators = async (usernames: string[]) => {
             price,
             buys: totalBuys,
             sells: totalSells,
+            ownerCount,
             lastUpdated: new Date(),
           },
           { merge: true }
@@ -92,6 +112,7 @@ export const fetchTwitchCreators = async (usernames: string[]) => {
           views,
           isLive: false,
           price,
+          ownerCount,
         };
       })
     );
