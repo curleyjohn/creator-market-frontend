@@ -7,6 +7,7 @@ import CreatorCard from "./CreatorCard";
 import { useAuth } from "../context/AuthContext";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "../lib/firebase";
+import Loading from "./Loading";
 
 const TABS = ["YouTube", "Twitch"] as const;
 type TabType = (typeof TABS)[number];
@@ -67,7 +68,7 @@ const CreatorTabs = () => {
   };
 
   return (
-    <div className="p-6">
+    <div className="h-full overflow-auto">
       <div className="flex gap-4 mb-6">
         {TABS.map((tab) => (
           <button
@@ -84,7 +85,7 @@ const CreatorTabs = () => {
       </div>
 
       {loading ? (
-        <p className="text-theme">Loading {activeTab} creators...</p>
+        <Loading />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
           {userId && creators.map((creator: any) => (

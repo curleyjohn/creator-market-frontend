@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { collection, doc, getDocs, getDoc } from "firebase/firestore";
 import { useAuth } from "../context/AuthContext";
 import { db } from "../lib/firebase";
+import Loading from "../components/Loading";
 
 const PortfolioPage = () => {
   const { user } = useAuth();
@@ -46,11 +47,11 @@ const PortfolioPage = () => {
   if (!user) return null;
 
   return (
-    <div className="p-6">
+    <div className="h-full overflow-auto">
       <h1 className="text-2xl font-bold mb-4">Your Portfolio</h1>
 
       {loading ? (
-        <p className="text-sm text-gray-400">Loading portfolio...</p>
+        <Loading />
       ) : portfolio.length === 0 ? (
         <p className="text-sm text-gray-400">You don't own any creators yet.</p>
       ) : (

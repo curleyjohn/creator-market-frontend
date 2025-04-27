@@ -27,7 +27,7 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
 
   return (
     <>
-      <aside className="hidden md:flex w-64 p-4 h-screen flex-col justify-between bg-sidebar text-theme border-r border-accent">
+      <aside className="hidden md:flex w-64 p-4 h-screen flex-col justify-between bg-sidebar text-theme border-r border-accent transition-transform duration-300 ease-in-out">
         <div>
           <h1 className="text-xl font-bold mb-6 text-text">Creator Market</h1>
           <nav className="flex flex-col gap-2">

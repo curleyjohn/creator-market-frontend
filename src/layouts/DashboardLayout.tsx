@@ -20,9 +20,9 @@ const DashboardLayout = () => {
   return (
     <div className="flex min-h-screen text-theme bg-theme">
       <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
-      <div className="flex flex-col flex-1">
+      <div className="flex flex-col flex-1 h-screen">
         <Topbar onMenuClick={() => setIsSidebarOpen(true)} />
-        <main className="flex-1 p-6 bg-theme text-theme">
+        <main className="px-6 py-4 bg-theme text-theme flex-shrink overflow-hidden">
           <Outlet />
         </main>
       </div>
