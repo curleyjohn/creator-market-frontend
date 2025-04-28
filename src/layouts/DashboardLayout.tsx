@@ -20,7 +20,7 @@ const DashboardLayout = () => {
   return (
     <div className="flex min-h-screen text-theme bg-theme">
       <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
-      <div className="flex flex-col flex-1 h-screen">
+      <div className="flex flex-col flex-1 h-screen" style={{ background: "linear-gradient(to bottom, var(--bg), var(--sidebar-bg))" }}>
         <Topbar onMenuClick={() => setIsSidebarOpen(true)} />
         <main className="px-6 py-4 bg-theme text-theme flex-shrink overflow-hidden">
           <Outlet />

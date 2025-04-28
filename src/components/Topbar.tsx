@@ -41,12 +41,17 @@ const Topbar = ({ onMenuClick }: TopbarProps) => {
   }, [user?.uid]);
 
   return (
-    <header className="w-full flex justify-end items-center gap-4 py-4 px-6 border-b bg-topbar text-topbar border-accent">
-      {balance !== null && (
-        <div className="text-sm font-medium text-[var(--text)] bg-[var(--sidebar-bg)] px-3 py-1 rounded-full border border-[var(--accent)]">
-          💰 {balance.toLocaleString()} CC
-        </div>
-      )}
+    // <header className="w-full flex justify-end items-center gap-4 py-4 px-6 border-b bg-topbar text-topbar border-accent">
+    <header
+      className="w-full flex justify-between items-center py-4 px-6 border-b border-[var(--accent)] bg-[var(--topbar-bg)] text-[var(--topbar-text)] transition-all"
+    >
+      {
+        balance !== null && (
+          <div className="text-sm font-medium text-[var(--text)] bg-[var(--sidebar-bg)] px-3 py-1 rounded-full border border-[var(--accent)]">
+            💰 {balance.toLocaleString()} CC
+          </div>
+        )
+      }
       {/* Mobile menu button */}
       <button className="md:hidden" onClick={onMenuClick}>
         <svg
@@ -83,7 +88,7 @@ const Topbar = ({ onMenuClick }: TopbarProps) => {
           </div>
         )}
       </div>
-    </header>
+    </header >
   );
 };
 
