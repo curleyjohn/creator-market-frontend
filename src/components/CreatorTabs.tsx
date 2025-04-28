@@ -5,7 +5,7 @@ import { fetchYouTubeCreators } from "../lib/youtube";
 import { fetchTwitchCreators } from "../lib/twitch";
 import CreatorCard from "./CreatorCard";
 import { useAuth } from "../context/AuthContext";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, onSnapshot } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import Loading from "./Loading";
 
@@ -38,6 +38,24 @@ const CreatorTabs = () => {
 
     setLoading(false);
   }, [youtubeCreators.length, twitchCreators.length]);
+
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, "creators"), (snapshot) => {
+      const allCreators = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      // Split by platform
+      const youtube = allCreators.filter((c: any) => c.platform === "youtube");
+      const twitch = allCreators.filter((c: any) => c.platform === "twitch");
+
+      setYouTubeCreators(youtube);
+      setTwitchCreators(twitch);
+    });
+
+    return () => unsub(); // Cleanup listener on unmount
+  }, []);
 
   useEffect(() => {
     loadCreators("YouTube"); // Initial load

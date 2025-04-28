@@ -22,7 +22,7 @@ const CreatorCard = ({
       : null;
 
   return (
-    <div className="bg-[var(--sidebar-bg)] border border-[var(--accent)] rounded-2xl p-5 items-center shadow hover:shadow-lg transition hover:-translate-y-1 hover:shadow-lg">
+    <div className="bg-[var(--sidebar-bg)] border border-[var(--accent)] rounded-2xl p-5 items-center shadow hover:shadow-lg">
       <div className="flex">
         <img
           src={creator.avatar}

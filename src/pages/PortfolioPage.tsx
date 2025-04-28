@@ -1,48 +1,63 @@
 import { useEffect, useState } from "react";
-import { collection, doc, getDocs, getDoc } from "firebase/firestore";
+import { collection, onSnapshot } from "firebase/firestore";
 import { useAuth } from "../context/AuthContext";
 import { db } from "../lib/firebase";
 import Loading from "../components/Loading";
 
 const PortfolioPage = () => {
   const { user } = useAuth();
-  const [portfolio, setPortfolio] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [totalValue, setTotalValue] = useState(0);
+  const [portfolioDocs, setPortfolioDocs] = useState<any[]>([]);
+  const [creatorsDocs, setCreatorsDocs] = useState<{ [id: string]: any }>({});
+  const [portfolioReady, setPortfolioReady] = useState(false);
+  const [creatorsReady, setCreatorsReady] = useState(false);
 
   useEffect(() => {
-    const fetchPortfolio = async () => {
-      if (!user?.uid) return;
+    if (!user?.uid) return;
 
-      const portfolioRef = collection(db, "users", user.uid, "portfolio");
-      const snapshot = await getDocs(portfolioRef);
+    const portfolioRef = collection(db, "users", user.uid, "portfolio");
+    const creatorsRef = collection(db, "creators");
 
-      const result = await Promise.all(
-        snapshot.docs.map(async (docSnap) => {
-          const data = docSnap.data();
-          const creatorRef = doc(db, "creators", data.creatorId);
-          const creatorSnap = await getDoc(creatorRef);
-          const creatorData = creatorSnap.data();
+    // 🔹 Listen portfolio
+    const unsubPortfolio = onSnapshot(portfolioRef, (snapshot) => {
+      const items = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setPortfolioDocs(items);
+      setPortfolioReady(true); // ✅ Portfolio is ready
+    });
 
-          const currentPrice = creatorData?.price || 0;
-          const value = currentPrice * data.quantity;
+    // 🔹 Listen creators
+    const unsubCreators = onSnapshot(creatorsRef, (snapshot) => {
+      const items: { [id: string]: any } = {};
+      snapshot.docs.forEach((doc) => {
+        items[doc.id] = doc.data();
+      });
+      setCreatorsDocs(items);
+      setCreatorsReady(true); // ✅ Creators are ready
+    });
 
-          return {
-            ...data,
-            currentPrice,
-            value,
-          };
-        })
-      );
-
-      const total = result.reduce((sum, item) => sum + item.value, 0);
-      setPortfolio(result);
-      setTotalValue(total);
-      setLoading(false);
+    return () => {
+      unsubPortfolio();
+      unsubCreators();
     };
+  }, [user?.uid]);
 
-    fetchPortfolio();
-  }, [user]);
+  const loading = !(portfolioReady && creatorsReady);
+
+  const combinedPortfolio = portfolioDocs.map((item) => {
+    const creator = creatorsDocs[item.creatorId];
+    const currentPrice = creator?.price || 0;
+    const value = currentPrice * item.quantity;
+
+    return {
+      ...item,
+      currentPrice,
+      value,
+    };
+  });
+
+  const totalValue = combinedPortfolio.reduce((sum, item) => sum + item.value, 0);
 
   if (!user) return null;
 
@@ -52,7 +67,7 @@ const PortfolioPage = () => {
 
       {loading ? (
         <Loading />
-      ) : portfolio.length === 0 ? (
+      ) : combinedPortfolio.length === 0 ? (
         <p className="text-sm text-gray-400">You don't own any creators yet.</p>
       ) : (
         <>
@@ -61,7 +76,7 @@ const PortfolioPage = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {portfolio.map((item) => {
+            {combinedPortfolio.map((item) => {
               const gainLossPercent =
                 ((item.currentPrice - item.averageBuyPrice) / item.averageBuyPrice) * 100;
 
@@ -84,7 +99,6 @@ const PortfolioPage = () => {
                     Value: {item.value.toFixed(2)} CC
                   </div>
 
-                  {/* 🔥 Gain/Loss Section */}
                   <div className="text-sm font-semibold mt-2">
                     Return:{" "}
                     <span className={gainLossPercent >= 0 ? "text-green-500" : "text-red-500"}>
