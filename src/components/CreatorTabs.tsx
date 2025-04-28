@@ -5,7 +5,7 @@ import { fetchYouTubeCreators } from "../lib/youtube";
 import { fetchTwitchCreators } from "../lib/twitch";
 import CreatorCard from "./CreatorCard";
 import { useAuth } from "../context/AuthContext";
-import { collection, getDocs, onSnapshot } from "firebase/firestore";
+import { collection, onSnapshot, getDocs } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import Loading from "./Loading";
 
@@ -40,6 +40,32 @@ const CreatorTabs = () => {
   }, [youtubeCreators.length, twitchCreators.length]);
 
   useEffect(() => {
+    if (!user?.uid) return;
+
+    const loadTwitchCreators = async () => {
+      setLoading(true);
+
+      const twitchRef = collection(db, "creators");
+      const snap = await getDocs(twitchRef);
+      const existingIds = new Set(snap.docs.map(doc => doc.id));
+
+      // Find which usernames are missing
+      const missingUsernames = TWITCH_USERNAMES.filter(u => {
+        return !Array.from(existingIds).some(id => id.includes(u));
+      });
+
+      if (missingUsernames.length > 0) {
+        console.log("Missing Twitch users detected:", missingUsernames);
+        await fetchTwitchCreators(missingUsernames);
+      }
+
+      setLoading(false);
+    };
+
+    loadTwitchCreators();
+  }, [user?.uid]);
+
+  useEffect(() => {
     const unsub = onSnapshot(collection(db, "creators"), (snapshot) => {
       const allCreators = snapshot.docs.map((doc) => ({
         id: doc.id,
@@ -62,23 +88,24 @@ const CreatorTabs = () => {
   }, [loadCreators]);
 
   useEffect(() => {
-    const fetchPortfolio = async () => {
-      if (!user?.uid) return;
+    if (!user?.uid) return;
 
-      const ref = collection(db, "users", user.uid, "portfolio");
-      const snap = await getDocs(ref);
+    const ref = collection(db, "users", user.uid, "portfolio");
 
-      const result: { [creatorId: string]: { quantity: number, averageBuyPrice: number | null } } = {};
+    const unsub = onSnapshot(ref, (snap) => {
+      const result: { [creatorId: string]: { quantity: number; averageBuyPrice: number | null } } = {};
       snap.forEach((doc) => {
         const data = doc.data();
-        result[doc.id] = { quantity: data.quantity, averageBuyPrice: data.averageBuyPrice };
+        result[doc.id] = {
+          quantity: data.quantity,
+          averageBuyPrice: data.averageBuyPrice,
+        };
       });
-
       setPortfolioById(result);
-    };
+    });
 
-    fetchPortfolio();
-  }, [user]);
+    return () => unsub(); // Cleanup listener on unmount
+  }, [user?.uid]);
 
   const handleTabClick = (tab: TabType) => {
     setActiveTab(tab);
@@ -109,7 +136,8 @@ const CreatorTabs = () => {
           {userId && creators.map((creator: any) => (
             <CreatorCard
               key={`${creator.platform}-${creator.id}`}
-              creator={creator} userId={user?.uid}
+              creator={creator}
+              userId={user?.uid}
               ownedQuantity={portfolioById[creator.id]?.quantity || 0}
               averageBuyPrice={portfolioById[creator.id]?.averageBuyPrice || null}
             />

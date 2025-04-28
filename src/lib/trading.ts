@@ -67,12 +67,16 @@ export const buyCreator = async ({
     });
 
     // 2. Update portfolio
+    let oldQuantity = 0;
     if (portfolioSnap.exists()) {
       const portfolioData = portfolioSnap.data();
-      const oldQuantity = portfolioData.quantity || 0;
-      const oldAverage = portfolioData.averageBuyPrice || 0;
+      oldQuantity = portfolioData.quantity || 0;
+    }
 
-      const newQuantity = oldQuantity + quantity;
+    const newQuantity = oldQuantity + quantity;
+
+    if (portfolioSnap.exists()) {
+      const oldAverage = portfolioSnap.data().averageBuyPrice || 0;
       const newAverageBuyPrice =
         ((oldAverage * oldQuantity) + (livePrice * quantity)) / newQuantity;
 
@@ -90,24 +94,26 @@ export const buyCreator = async ({
       });
     }
 
+    // 👉 ownerCount update if first time owning
+    if (oldQuantity === 0 && newQuantity > 0) {
+      transaction.update(creatorRef, {
+        ownerCount: increment(1),
+      });
+    }
+
     // 3. Update creator buys and recalculate price
-    transaction.set(
-      creatorRef,
-      {
-        buys: increment(quantity),
-        lastUpdated: serverTimestamp(),
-        // Important: Update new price based on NEW buys value
-        price: calculateFinalPrice({
-          subscribers: creator.subscribers,
-          newSubscribers: 0,
-          newViews: creator.views,
-          postedThisWeek: false,
-          totalBuys: buys + quantity, // important!
-          totalSells: sells,
-        }),
-      },
-      { merge: true }
-    );
+    transaction.update(creatorRef, {
+      buys: increment(quantity),
+      lastUpdated: serverTimestamp(),
+      price: calculateFinalPrice({
+        subscribers: creator.subscribers,
+        newSubscribers: 0,
+        newViews: creator.views,
+        postedThisWeek: false,
+        totalBuys: buys + quantity,
+        totalSells: sells,
+      }),
+    });
 
     // 4. Log transaction
     transaction.set(doc(collection(db, "users", userId, "transactions")), {
@@ -176,33 +182,38 @@ export const sellCreator = async ({
       balance: currentBalance + totalValue,
     });
 
+    const oldQuantity = portfolioData.quantity || 0;
+    const newQuantity = oldQuantity - quantity;
+
     // 2. Update or delete portfolio
-    if (portfolioData.quantity === quantity) {
+    if (newQuantity <= 0) {
       transaction.delete(portfolioRef);
     } else {
       transaction.update(portfolioRef, {
-        quantity: portfolioData.quantity - quantity,
+        quantity: newQuantity,
       });
     }
 
-    // 3. Update creator stats and price
-    transaction.set(
-      creatorRef,
-      {
-        sells: increment(quantity),
-        lastUpdated: serverTimestamp(),
-        // Important: Update new price based on increased sells
-        price: calculateFinalPrice({
-          subscribers: creator.subscribers,
-          newSubscribers: 0,
-          newViews: creator.views,
-          postedThisWeek: false,
-          totalBuys: buys,
-          totalSells: sells + quantity,
-        }),
-      },
-      { merge: true }
-    );
+    // 👉 ownerCount update if selling out fully
+    if (oldQuantity > 0 && newQuantity === 0) {
+      transaction.update(creatorRef, {
+        ownerCount: increment(-1),
+      });
+    }
+
+    // 3. Update creator sells and recalculate price
+    transaction.update(creatorRef, {
+      sells: increment(quantity),
+      lastUpdated: serverTimestamp(),
+      price: calculateFinalPrice({
+        subscribers: creator.subscribers,
+        newSubscribers: 0,
+        newViews: creator.views,
+        postedThisWeek: false,
+        totalBuys: buys,
+        totalSells: sells + quantity,
+      }),
+    });
 
     // 4. Log transaction
     transaction.set(doc(collection(db, "users", userId, "transactions")), {
