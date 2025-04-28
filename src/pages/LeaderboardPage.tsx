@@ -1,70 +1,81 @@
 import { useEffect, useState } from "react";
 import { db } from "../lib/firebase";
-import { collection, getDocs, getDoc, doc } from "firebase/firestore";
+import { collection, onSnapshot, collectionGroup } from "firebase/firestore";
 import Loading from "../components/Loading";
 
 const LeaderboardPage = () => {
-  const [leaders, setLeaders] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [users, setUsers] = useState<any[]>([]);
+  const [portfolios, setPortfolios] = useState<{ [userId: string]: any[] }>({});
+  const [creators, setCreators] = useState<{ [creatorId: string]: any }>({});
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchLeaders = async () => {
-      setLoading(true);
+    // 1. Listen to users
+    const unsubUsers = onSnapshot(collection(db, "users"), (snapshot) => {
+      const usersData = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setUsers(usersData);
+    });
 
-      const usersSnap = await getDocs(collection(db, "users"));
-      const users: any[] = [];
-
-      for (const userDoc of usersSnap.docs) {
-        const userData = userDoc.data();
-        const portfolioSnap = await getDocs(collection(db, "users", userDoc.id, "portfolio"));
-
-        let portfolioValue = 0;
-
-        for (const item of portfolioSnap.docs) {
-          const itemData = item.data();
-
-          const creatorId = itemData.creatorId;
-          const quantity = itemData.quantity || 0;
-
-          if (!creatorId) continue;
-
-          // Fetch the creator document
-          const creatorRef = doc(db, "creators", creatorId);
-          const creatorSnap = await getDoc(creatorRef);
-
-          let currentPrice = 0;
-          if (creatorSnap.exists()) {
-            const creatorData = creatorSnap.data();
-            currentPrice = creatorData.price || 0;
-          }
-
-          portfolioValue += quantity * currentPrice;
-        }
-
-        const balance = userData.balance || 0;
-        const netWorth = balance + portfolioValue;
-
-        users.push({
-          id: userDoc.id,
-          displayName: userData.displayName || "Anonymous",
-          photoURL: userData.photoURL || null,
-          balance,
-          portfolioValue,
-          netWorth,
+    // 2. Listen to portfolios
+    const unsubPortfolios = onSnapshot(collectionGroup(db, "portfolio"), (snapshot) => {
+      const grouped: { [userId: string]: any[] } = {};
+      snapshot.docs.forEach((doc) => {
+        const pathParts = doc.ref.path.split("/");
+        const userId = pathParts[1]; // users/{userId}/portfolio/{docId}
+        if (!grouped[userId]) grouped[userId] = [];
+        grouped[userId].push({
+          id: doc.id,
+          ...doc.data(),
         });
-      }
+      });
+      setPortfolios(grouped);
+    });
 
-      // Sort by net worth descending
-      users.sort((a, b) => b.netWorth - a.netWorth);
+    // 3. Listen to creators
+    const unsubCreators = onSnapshot(collection(db, "creators"), (snapshot) => {
+      const creatorsData: { [id: string]: any } = {};
+      snapshot.docs.forEach((doc) => {
+        creatorsData[doc.id] = doc.data();
+      });
+      setCreators(creatorsData);
+    });
 
-      setLeaders(users);
-      setLoading(false);
+    setLoading(false);
+
+    return () => {
+      unsubUsers();
+      unsubPortfolios();
+      unsubCreators();
     };
-
-    fetchLeaders();
   }, []);
 
+  // 🔥 Compute Leaderboard
+  const leaders = users.map((user) => {
+    const userPortfolio = portfolios[user.id] || [];
+    let portfolioValue = 0;
 
+    userPortfolio.forEach((item) => {
+      const creator = creators[item.creatorId];
+      if (creator) {
+        portfolioValue += (creator.price || 0) * (item.quantity || 0);
+      }
+    });
+
+    const balance = user.balance || 0;
+    const netWorth = balance + portfolioValue;
+
+    return {
+      id: user.id,
+      displayName: user.displayName || "Anonymous",
+      photoURL: user.photoURL || null,
+      balance,
+      portfolioValue,
+      netWorth,
+    };
+  }).sort((a, b) => b.netWorth - a.netWorth); // Sort by net worth
 
   return (
     <div className="h-full flex-shrink flex-1 overflow-auto">
@@ -87,7 +98,6 @@ const LeaderboardPage = () => {
 
             <tbody>
               {leaders.map((user, index) => {
-                // Define color based on rank
                 let nameColor = "text-white";
                 if (index === 0) nameColor = "text-yellow-400"; // Gold
                 else if (index === 1) nameColor = "text-gray-300"; // Silver
@@ -115,7 +125,6 @@ const LeaderboardPage = () => {
                 );
               })}
             </tbody>
-
 
           </table>
         </div>
