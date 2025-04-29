@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { collection, query, where, orderBy, limit, getDocs, startAfter, DocumentData } from "firebase/firestore";
 import { db } from "../lib/firebase";
-import { ArrowUpIcon, ArrowDownIcon, FunnelIcon } from "@heroicons/react/24/outline";
+import { ArrowUpIcon, ArrowDownIcon, FunnelIcon, ExclamationCircleIcon } from "@heroicons/react/24/outline";
 
 interface Transaction {
   id: string;
@@ -28,6 +28,7 @@ interface TransactionHistoryProps {
 const TransactionHistory = ({ userId, onStatsUpdate }: TransactionHistoryProps) => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [lastDoc, setLastDoc] = useState<DocumentData | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const [filterType, setFilterType] = useState<'all' | 'buy' | 'sell'>('all');
@@ -52,6 +53,7 @@ const TransactionHistory = ({ userId, onStatsUpdate }: TransactionHistoryProps) 
   useEffect(() => {
     const fetchTotalCount = async () => {
       try {
+        setError(null);
         const transactionsRef = collection(db, 'users', userId, 'transactions');
         let q = query(transactionsRef);
 
@@ -69,6 +71,7 @@ const TransactionHistory = ({ userId, onStatsUpdate }: TransactionHistoryProps) 
         setAllTransactions(fetchedTransactions);
       } catch (error) {
         console.error('Error fetching total count:', error);
+        setError('Failed to fetch transaction statistics. Please try again later.');
       }
     };
 
@@ -81,8 +84,9 @@ const TransactionHistory = ({ userId, onStatsUpdate }: TransactionHistoryProps) 
     onStatsUpdate?.(stats);
   }, [allTransactions, onStatsUpdate]);
 
-  const fetchTransactions = async (loadMore = false) => {
+  const fetchTransactions = useCallback(async (loadMore = false) => {
     try {
+      setError(null);
       setLoading(true);
       const transactionsRef = collection(db, 'users', userId, 'transactions');
       let q = query(
@@ -115,17 +119,20 @@ const TransactionHistory = ({ userId, onStatsUpdate }: TransactionHistoryProps) 
         })) as Transaction[];
 
         setTransactions(prev => loadMore ? [...prev, ...newTransactions] : newTransactions);
+      } else if (!loadMore) {
+        setTransactions([]);
       }
     } catch (error) {
       console.error('Error fetching transactions:', error);
+      setError('Failed to fetch transactions. Please try again later.');
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId, filterType, lastDoc]);
 
   useEffect(() => {
     fetchTransactions();
-  }, [userId, filterType]);
+  }, [userId, filterType, fetchTransactions]);
 
   const formatDate = (timestamp: Date) => {
     return timestamp.toLocaleDateString("en-US", {
@@ -145,15 +152,28 @@ const TransactionHistory = ({ userId, onStatsUpdate }: TransactionHistoryProps) 
           <FunnelIcon className="h-5 w-5 text-[var(--text)]/60" />
           <select
             value={filterType}
-            onChange={(e) => setFilterType(e.target.value as 'all' | 'buy' | 'sell')}
+            onChange={(e) => {
+              setFilterType(e.target.value as 'all' | 'buy' | 'sell');
+              setTransactions([]);
+              setLastDoc(null);
+              setHasMore(true);
+              setError(null);
+            }}
             className="bg-[var(--sidebar-bg)] border border-[var(--accent)]/20 rounded-lg px-3 py-1.5 text-sm text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)] focus:border-transparent [&>option]:bg-[var(--sidebar-bg)] [&>option]:text-[var(--text)]"
           >
-            <option value="all" className="bg-[var(--sidebar-bg)] text-[var(--text)]">All Transactions</option>
-            <option value="buy" className="bg-[var(--sidebar-bg)] text-[var(--text)]">Buy Orders</option>
-            <option value="sell" className="bg-[var(--sidebar-bg)] text-[var(--text)]">Sell Orders</option>
+            <option value="all">All Transactions</option>
+            <option value="buy">Buy Orders</option>
+            <option value="sell">Sell Orders</option>
           </select>
         </div>
       </div>
+
+      {error && (
+        <div className="flex items-center gap-2 p-4 bg-red-500/10 text-red-500">
+          <ExclamationCircleIcon className="h-5 w-5" />
+          <p>{error}</p>
+        </div>
+      )}
 
       {loading && transactions.length === 0 ? (
         <div className="animate-pulse space-y-4 p-6">
@@ -175,7 +195,9 @@ const TransactionHistory = ({ userId, onStatsUpdate }: TransactionHistoryProps) 
         </div>
       ) : transactions.length === 0 ? (
         <div className="text-center py-12">
-          <p className="text-[var(--text)]/60">No transactions found</p>
+          <p className="text-[var(--text)]/60">
+            {error ? 'Unable to load transactions' : 'No transactions found'}
+          </p>
         </div>
       ) : (
         <div className="divide-y divide-[var(--accent)]/10">

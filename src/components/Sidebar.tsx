@@ -2,16 +2,18 @@ import React, { useState } from "react";
 import { NavLink } from "react-router-dom";
 import { signOut } from "firebase/auth";
 import { auth } from "../lib/firebase";
+import { useAuth } from "../context/AuthContext";
 import {
   HomeIcon,
   ChartBarIcon,
   CurrencyDollarIcon,
   TrophyIcon,
   UserIcon,
-  ArrowTrendingUpIcon,
   ChartPieIcon,
   Cog6ToothIcon,
-  ArrowRightOnRectangleIcon
+  ArrowLeftEndOnRectangleIcon,
+  ChevronLeftIcon,
+  XMarkIcon
 } from "@heroicons/react/24/outline";
 
 interface SidebarProps {
@@ -21,6 +23,7 @@ interface SidebarProps {
 
 const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const { user } = useAuth();
 
   const mainNavItems = [
     { name: "Dashboard", path: "/", icon: HomeIcon },
@@ -45,7 +48,7 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
   return (
     <>
       {/* Desktop Sidebar */}
-      <aside className={`hidden md:flex flex-col h-screen bg-[var(--sidebar-bg)] border-r border-[var(--accent)] transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-72'}`}>
+      <aside className={`hidden md:flex flex-col h-screen bg-[var(--sidebar-bg)] border-r border-[var(--accent)] transition-all duration-300 ${isCollapsed ? 'w-20' : 'w-64'}`}>
         {/* Logo and Collapse Button */}
         <div className="flex items-center justify-between p-4 border-b border-[var(--accent)]">
           {!isCollapsed && <h1 className="text-xl font-bold text-[var(--text)]">Creator Market</h1>}
@@ -53,7 +56,7 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
             onClick={() => setIsCollapsed(!isCollapsed)}
             className="p-2 rounded-lg hover:bg-[var(--accent)]/10 transition-colors"
           >
-            <ArrowRightOnRectangleIcon className={`w-5 h-5 text-[var(--text)] transform transition-transform ${isCollapsed ? 'rotate-180' : ''}`} />
+            <ChevronLeftIcon className={`w-5 h-5 text-[var(--text)] transform transition-transform ${isCollapsed ? 'rotate-180' : ''}`} />
           </button>
         </div>
 
@@ -61,11 +64,17 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
         <div className="p-4 border-b border-[var(--accent)]">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-[var(--accent)] flex items-center justify-center">
-              <UserIcon className="w-6 h-6 text-[var(--accent-text)]" />
+              {user?.photoURL ? (
+                <img src={user.photoURL} alt={user.displayName || 'User'} className="w-full h-full rounded-full object-cover" />
+              ) : (
+                <UserIcon className="w-6 h-6 text-[var(--accent-text)]" />
+              )}
             </div>
             {!isCollapsed && (
               <div>
-                <p className="text-sm font-medium text-[var(--text)]">John Doe</p>
+                <p className="text-sm font-medium text-[var(--text)]">
+                  {user?.displayName || 'Anonymous User'}
+                </p>
                 <p className="text-xs text-[var(--text)]/70">Trader</p>
               </div>
             )}
@@ -114,14 +123,18 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
             onClick={handleLogout}
             className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-[var(--text)] hover:bg-[var(--accent)]/10 transition-colors"
           >
-            <ArrowRightOnRectangleIcon className="w-5 h-5" />
+            <ArrowLeftEndOnRectangleIcon className="w-5 h-5" />
             {!isCollapsed && <span className="text-sm font-medium">Logout</span>}
           </button>
         </div>
       </aside>
 
       {/* Mobile Sidebar */}
-      <div className={`fixed inset-0 z-40 bg-black/50 md:hidden ${isOpen ? 'block' : 'hidden'}`} onClick={onClose}>
+      <div
+        className={`md:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 transition-opacity ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
+          }`}
+        onClick={onClose}
+      >
         <aside
           className="absolute top-0 left-0 h-full w-72 p-4 bg-[var(--sidebar-bg)] border-r border-[var(--accent)]"
           onClick={(e) => e.stopPropagation()}
@@ -129,8 +142,27 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
           <div className="flex items-center justify-between mb-6">
             <h1 className="text-xl font-bold text-[var(--text)]">Creator Market</h1>
             <button onClick={onClose} className="p-2 rounded-lg hover:bg-[var(--accent)]/10">
-              <ArrowRightOnRectangleIcon className="w-5 h-5 text-[var(--text)]" />
+              <XMarkIcon className="w-5 h-5 text-[var(--text)]" />
             </button>
+          </div>
+
+          {/* User Profile for Mobile */}
+          <div className="mb-6 p-4 border-y border-[var(--accent)]">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-[var(--accent)] flex items-center justify-center">
+                {user?.photoURL ? (
+                  <img src={user.photoURL} alt={user.displayName || 'User'} className="w-full h-full rounded-full object-cover" />
+                ) : (
+                  <UserIcon className="w-6 h-6 text-[var(--accent-text)]" />
+                )}
+              </div>
+              <div>
+                <p className="text-sm font-medium text-[var(--text)]">
+                  {user?.displayName || 'Anonymous User'}
+                </p>
+                <p className="text-xs text-[var(--text)]/70">Trader</p>
+              </div>
+            </div>
           </div>
 
           <nav className="space-y-2">
@@ -153,7 +185,7 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
             ))}
           </nav>
 
-          <div className="mt-6 pt-6 border-t border-[var(--accent)] space-y-2">
+          <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-[var(--accent)] space-y-2">
             {secondaryNavItems.map((item) => (
               <NavLink
                 key={item.path}
@@ -175,7 +207,7 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
               onClick={handleLogout}
               className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-[var(--text)] hover:bg-[var(--accent)]/10 transition-colors"
             >
-              <ArrowRightOnRectangleIcon className="w-5 h-5" />
+              <ArrowLeftEndOnRectangleIcon className="w-5 h-5" />
               <span className="text-sm font-medium">Logout</span>
             </button>
           </div>

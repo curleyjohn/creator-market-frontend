@@ -1,41 +1,78 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { buyCreator } from "../lib/trading";
 import TransactionConfirmation from "./TransactionConfirmation";
 import { Transition } from "@headlessui/react";
 import { CurrencyDollarIcon } from "@heroicons/react/24/outline";
 
-const BuyModal = ({ userId, creator, onClose }: any) => {
+interface BuyModalProps {
+  isOpen: boolean;
+  userId?: string;
+  creator: {
+    id: string;
+    name: string;
+    platform: "youtube" | "twitch";
+    subscribers: number;
+    views: number;
+    price: number;
+  };
+  onClose: () => void;
+}
+
+const BuyModal = ({ isOpen, userId, creator, onClose }: BuyModalProps) => {
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showConfirmation, setShowConfirmation] = useState(false);
 
+  // Reset state when modal opens/closes
+  useEffect(() => {
+    if (!isOpen) {
+      setQuantity(1);
+      setError("");
+      setShowConfirmation(false);
+    }
+  }, [isOpen]);
+
   const handleBuy = async () => {
+    if (!userId) {
+      setError("You must be logged in to buy");
+      return;
+    }
+
     setLoading(true);
+    setError("");
+
     try {
       await buyCreator({
         userId,
-        creator,
+        creator: {
+          id: creator.id,
+          name: creator.name,
+          platform: creator.platform,
+          subscribers: creator.subscribers,
+          views: creator.views
+        },
         quantity: Number(quantity),
       });
       setShowConfirmation(true);
-      // Close modal after a short delay to allow toast to appear
-      setTimeout(() => {
-        onClose();
-      }, 3000);
+      // Close modal immediately after successful purchase
+      onClose();
     } catch (err: any) {
       setError(err.message || "Something went wrong");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const totalCost = quantity * creator.price;
+
+  if (!isOpen) return null;
 
   return (
     <>
       <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex justify-center items-center z-50">
         <Transition
-          show={true}
+          show={isOpen}
           enter="transition ease-out duration-300"
           enterFrom="opacity-0 scale-95"
           enterTo="opacity-100 scale-100"
@@ -111,7 +148,7 @@ const BuyModal = ({ userId, creator, onClose }: any) => {
                 </button>
                 <button
                   onClick={handleBuy}
-                  disabled={loading}
+                  disabled={loading || !userId}
                   className="px-5 py-2.5 rounded-lg bg-accent text-accent-text font-semibold hover:bg-accent/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed relative"
                 >
                   {loading ? (

@@ -10,6 +10,18 @@ import { db } from "../lib/firebase";
 import { Transition } from "@headlessui/react";
 import { PlayIcon, VideoCameraIcon, ChartBarIcon } from "@heroicons/react/24/outline";
 
+interface Creator {
+  id: string;
+  name: string;
+  platform: "youtube" | "twitch";
+  price: number;
+  priceChange: number;
+  priceHistory: number[];
+  imageUrl?: string;
+  subscribers: number;
+  views: number;
+}
+
 const TABS = [
   { name: "YouTube", icon: PlayIcon, color: "bg-red-500" },
   { name: "Twitch", icon: VideoCameraIcon, color: "bg-purple-500" }
@@ -24,8 +36,8 @@ const CreatorTabs = () => {
   const [portfolioById, setPortfolioById] = useState<{ [creatorId: string]: { quantity: number; averageBuyPrice: number | null } }>({});
   const userId = user?.uid;
 
-  const [youtubeCreators, setYouTubeCreators] = useState<any>([]);
-  const [twitchCreators, setTwitchCreators] = useState<any>([]);
+  const [youtubeCreators, setYouTubeCreators] = useState<Creator[]>([]);
+  const [twitchCreators, setTwitchCreators] = useState<Creator[]>([]);
 
   const creators = activeTab === "YouTube" ? youtubeCreators : twitchCreators;
 
@@ -69,13 +81,23 @@ const CreatorTabs = () => {
 
   useEffect(() => {
     const unsub = onSnapshot(collection(db, "creators"), (snapshot) => {
-      const allCreators = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
+      const allCreators = snapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          name: data.name,
+          platform: data.platform,
+          price: data.price,
+          priceChange: data.priceChange || 0,
+          priceHistory: data.priceHistory || [],
+          imageUrl: data.avatar,
+          subscribers: data.subscribers || 0,
+          views: data.views || 0,
+        } as Creator;
+      });
 
-      const youtube = allCreators.filter((c: any) => c.platform === "youtube");
-      const twitch = allCreators.filter((c: any) => c.platform === "twitch");
+      const youtube = allCreators.filter((c) => c.platform === "youtube");
+      const twitch = allCreators.filter((c) => c.platform === "twitch");
 
       setYouTubeCreators(youtube);
       setTwitchCreators(twitch);
@@ -162,7 +184,7 @@ const CreatorTabs = () => {
               creator={creator}
               userId={user?.uid}
               ownedQuantity={portfolioById[creator.id]?.quantity || 0}
-              averageBuyPrice={portfolioById[creator.id]?.averageBuyPrice || null}
+              averageBuyPrice={portfolioById[creator.id]?.averageBuyPrice || undefined}
             />
           ))}
         </div>

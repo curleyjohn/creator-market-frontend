@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { collection, onSnapshot } from "firebase/firestore";
+import { collection, onSnapshot, query, orderBy, limit } from "firebase/firestore";
 import { useAuth } from "../context/AuthContext";
 import { db } from "../lib/firebase";
 import { Transition } from "@headlessui/react";
@@ -10,18 +10,7 @@ import {
   ArrowTrendingDownIcon,
   UserIcon,
 } from "@heroicons/react/24/outline";
-import PriceHistoryGraph from "../components/PriceHistoryGraph";
-
-interface PortfolioItem {
-  id: string;
-  creatorId: string;
-  name: string;
-  platform: string;
-  quantity: number;
-  averageBuyPrice: number;
-  currentPrice: number;
-  value: number;
-}
+import SparklineChart from "../components/SparklineChart";
 
 const PortfolioPage = () => {
   const { user } = useAuth();
@@ -29,6 +18,7 @@ const PortfolioPage = () => {
   const [creatorsDocs, setCreatorsDocs] = useState<{ [id: string]: any }>({});
   const [portfolioReady, setPortfolioReady] = useState(false);
   const [creatorsReady, setCreatorsReady] = useState(false);
+  const [priceHistoryData, setPriceHistoryData] = useState<{ [creatorId: string]: { price: number; timestamp: Date }[] }>({});
 
   useEffect(() => {
     if (!user?.uid) return;
@@ -63,17 +53,66 @@ const PortfolioPage = () => {
     };
   }, [user?.uid]);
 
+  // Fetch price history for each creator
+  useEffect(() => {
+    if (!portfolioDocs.length) return;
+
+    const unsubscribers = portfolioDocs.map(item => {
+      const historyRef = collection(db, 'creators', item.creatorId, 'priceHistory');
+      const q = query(
+        historyRef,
+        orderBy('timestamp', 'desc'),
+        limit(49) // Reduce limit by 1 to make room for current price
+      );
+
+      return onSnapshot(q, (snapshot) => {
+        const history = snapshot.docs
+          .map(doc => {
+            const data = doc.data();
+            return {
+              price: data.price,
+              timestamp: data.timestamp?.toDate() || new Date()
+            };
+          })
+          .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()) // Sort descending first
+          .slice(0, 49) // Keep only the most recent 49 points
+          .reverse(); // Reverse to get ascending order
+
+        // Get the current creator data
+        const currentCreator = creatorsDocs[item.creatorId];
+        if (currentCreator) {
+          // Always add the current price as the latest point
+          history.push({
+            price: currentCreator.price,
+            timestamp: currentCreator.lastUpdated?.toDate() || new Date()
+          });
+        }
+
+        setPriceHistoryData(prev => ({
+          ...prev,
+          [item.creatorId]: history
+        }));
+      });
+    });
+
+    return () => {
+      unsubscribers.forEach(unsub => unsub());
+    };
+  }, [portfolioDocs, creatorsDocs]);
+
   const loading = !(portfolioReady && creatorsReady);
 
   const combinedPortfolio = portfolioDocs.map((item) => {
     const creator = creatorsDocs[item.creatorId];
     const currentPrice = creator?.price || 0;
     const value = currentPrice * item.quantity;
+    const priceHistory = priceHistoryData[item.creatorId] || [];
 
     return {
       ...item,
       currentPrice,
       value,
+      priceHistory,
     };
   });
 
@@ -132,7 +171,7 @@ const PortfolioPage = () => {
                 <div className="bg-[var(--sidebar-bg)] border border-[var(--accent)]/20 rounded-xl p-4">
                   <div className="flex items-center gap-2 mb-2">
                     <CurrencyDollarIcon className="w-5 h-5 text-[var(--text)]/60" />
-                    <h3 className="text-sm font-medium text-[var(--text)]/60">Total Value</h3>
+                    <h3 className="text-sm font-medium text-[var(--text)]/70">Total Value</h3>
                   </div>
                   <p className="text-2xl font-bold text-[var(--text)]">
                     {totalValue.toLocaleString()} CC
@@ -142,7 +181,7 @@ const PortfolioPage = () => {
                 <div className="bg-[var(--sidebar-bg)] border border-[var(--accent)]/20 rounded-xl p-4">
                   <div className="flex items-center gap-2 mb-2">
                     <ChartBarIcon className="w-5 h-5 text-[var(--text)]/60" />
-                    <h3 className="text-sm font-medium text-[var(--text)]/60">Total Gain/Loss</h3>
+                    <h3 className="text-sm font-medium text-[var(--text)]/70">Total Gain/Loss</h3>
                   </div>
                   <p className={`text-2xl font-bold ${totalGainLoss >= 0 ? "text-green-500" : "text-red-500"}`}>
                     {totalGainLoss >= 0 ? "+" : ""}{totalGainLoss.toLocaleString()} CC
@@ -152,7 +191,7 @@ const PortfolioPage = () => {
                 <div className="bg-[var(--sidebar-bg)] border border-[var(--accent)]/20 rounded-xl p-4">
                   <div className="flex items-center gap-2 mb-2">
                     <UserIcon className="w-5 h-5 text-[var(--text)]/60" />
-                    <h3 className="text-sm font-medium text-[var(--text)]/60">Average Return</h3>
+                    <h3 className="text-sm font-medium text-[var(--text)]/70">Average Return</h3>
                   </div>
                   <p className={`text-2xl font-bold ${totalGainLossPercent >= 0 ? "text-green-500" : "text-red-500"}`}>
                     {totalGainLossPercent >= 0 ? "+" : ""}{totalGainLossPercent.toFixed(2)}%
@@ -160,7 +199,6 @@ const PortfolioPage = () => {
                 </div>
               </div>
 
-              {/* Portfolio Items */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {combinedPortfolio.map((item) => {
                   const gainLossPercent =
@@ -198,8 +236,14 @@ const PortfolioPage = () => {
                         </div>
                       </div>
 
-                      <div className="mb-3 h-24">
-                        <PriceHistoryGraph creatorId={item.creatorId} />
+                      <div className="mb-3 h-24 w-full">
+                        <SparklineChart
+                          data={item.priceHistory?.map((p: { price: number }) => p.price)}
+                          timestamps={item.priceHistory?.map((p: { timestamp: Date }) => p.timestamp)}
+                          height={96}
+                          showArea={true}
+                          color={gainLossPercent >= 0 ? '#10B981' : '#EF4444'}
+                        />
                       </div>
 
                       <div className="grid grid-cols-3 gap-2">
@@ -208,7 +252,7 @@ const PortfolioPage = () => {
                             <CurrencyDollarIcon className="w-3.5 h-3.5 text-[var(--text)]/60" />
                             <p className="text-xs text-[var(--text)]/60">Price</p>
                           </div>
-                          <p className="text-sm font-bold text-[var(--text)]">${item.currentPrice.toFixed(2)}</p>
+                          <p className="text-sm font-bold text-[var(--text)]">{item.currentPrice.toFixed(2)} CC</p>
                         </div>
                         <div className="bg-[var(--bg)]/50 rounded-lg p-2">
                           <div className="flex items-center gap-1 mb-0.5">
@@ -222,7 +266,7 @@ const PortfolioPage = () => {
                             <ChartBarIcon className="w-3.5 h-3.5 text-[var(--text)]/60" />
                             <p className="text-xs text-[var(--text)]/60">Value</p>
                           </div>
-                          <p className="text-sm font-bold text-[var(--text)]">${item.value.toFixed(2)}</p>
+                          <p className="text-sm font-bold text-[var(--text)]">{item.value.toFixed(2)} CC</p>
                         </div>
                       </div>
                     </div>
@@ -257,23 +301,20 @@ const PortfolioPage = () => {
           {/* Loading Portfolio Items */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {[...Array(4)].map((_, i) => (
-              <div
-                key={i}
-                className="bg-[var(--sidebar-bg)] border border-[var(--accent)]/20 rounded-2xl p-4 animate-pulse"
-              >
-                <div className="flex items-center gap-3 mb-3">
+              <div key={i} className="bg-[var(--sidebar-bg)] border border-[var(--accent)]/20 rounded-2xl p-4 animate-pulse">
+                <div className="flex items-center gap-3 mb-4">
                   <div className="w-12 h-12 rounded-full bg-[var(--accent)]/20"></div>
-                  <div className="space-y-2">
-                    <div className="h-4 w-32 bg-[var(--accent)]/20 rounded"></div>
+                  <div>
+                    <div className="h-4 w-32 bg-[var(--accent)]/20 rounded mb-2"></div>
                     <div className="h-3 w-24 bg-[var(--accent)]/20 rounded"></div>
                   </div>
                 </div>
-                <div className="h-24 bg-[var(--accent)]/20 rounded mb-3"></div>
+                <div className="h-24 bg-[var(--accent)]/20 rounded mb-4"></div>
                 <div className="grid grid-cols-3 gap-2">
                   {[...Array(3)].map((_, j) => (
                     <div key={j} className="bg-[var(--bg)]/50 rounded-lg p-2">
-                      <div className="h-3 w-16 bg-[var(--accent)]/20 rounded mb-1"></div>
-                      <div className="h-4 w-12 bg-[var(--accent)]/20 rounded"></div>
+                      <div className="h-3 w-16 bg-[var(--accent)]/20 rounded mb-2"></div>
+                      <div className="h-4 w-20 bg-[var(--accent)]/20 rounded"></div>
                     </div>
                   ))}
                 </div>

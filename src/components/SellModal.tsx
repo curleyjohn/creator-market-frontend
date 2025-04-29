@@ -1,41 +1,84 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { sellCreator } from "../lib/trading";
 import TransactionConfirmation from "./TransactionConfirmation";
 import { Transition } from "@headlessui/react";
 import { BanknotesIcon } from "@heroicons/react/24/outline";
 
-const SellModal = ({ userId, creator, ownedQuantity, onClose }: any) => {
+interface SellModalProps {
+  isOpen: boolean;
+  userId?: string;
+  creator: {
+    id: string;
+    name: string;
+    platform: "youtube" | "twitch";
+    subscribers: number;
+    views: number;
+    price: number;
+  };
+  ownedQuantity: number;
+  onClose: () => void;
+}
+
+const SellModal = ({ isOpen, userId, creator, ownedQuantity, onClose }: SellModalProps) => {
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showConfirmation, setShowConfirmation] = useState(false);
 
+  // Reset state when modal opens/closes
+  useEffect(() => {
+    if (!isOpen) {
+      setQuantity(1);
+      setError("");
+      setShowConfirmation(false);
+    }
+  }, [isOpen]);
+
   const handleSell = async () => {
+    if (!userId) {
+      setError("You must be logged in to sell");
+      return;
+    }
+
+    if (quantity > ownedQuantity) {
+      setError("You cannot sell more shares than you own");
+      return;
+    }
+
     setLoading(true);
+    setError("");
+
     try {
       await sellCreator({
         userId,
-        creator,
+        creator: {
+          id: creator.id,
+          name: creator.name,
+          platform: creator.platform,
+          subscribers: creator.subscribers,
+          views: creator.views
+        },
         quantity: Number(quantity),
       });
       setShowConfirmation(true);
-      // Close modal after a short delay to allow toast to appear
-      setTimeout(() => {
-        onClose();
-      }, 3000);
+      // Close modal immediately after successful sale
+      onClose();
     } catch (err: any) {
       setError(err.message || "Something went wrong");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const totalValue = quantity * creator.price;
+
+  if (!isOpen) return null;
 
   return (
     <>
       <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex justify-center items-center z-50">
         <Transition
-          show={true}
+          show={isOpen}
           enter="transition ease-out duration-300"
           enterFrom="opacity-0 scale-95"
           enterTo="opacity-100 scale-100"
@@ -112,7 +155,7 @@ const SellModal = ({ userId, creator, ownedQuantity, onClose }: any) => {
                 </button>
                 <button
                   onClick={handleSell}
-                  disabled={loading || quantity > ownedQuantity}
+                  disabled={loading || quantity > ownedQuantity || !userId}
                   className="px-5 py-2.5 rounded-lg bg-accent text-accent-text font-semibold hover:bg-accent/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed relative"
                 >
                   {loading ? (

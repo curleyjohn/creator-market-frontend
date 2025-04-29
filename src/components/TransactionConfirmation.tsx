@@ -16,17 +16,24 @@ const TransactionConfirmation = ({
   creatorName,
   quantity,
 }: TransactionConfirmationProps) => {
-  const [show, setShow] = useState(isOpen);
+  const [show, setShow] = useState(false);
 
   useEffect(() => {
+    let timer: NodeJS.Timeout;
+
     if (isOpen) {
       setShow(true);
-      const timer = setTimeout(() => {
+      timer = setTimeout(() => {
         setShow(false);
-        onClose();
+        setTimeout(() => {
+          onClose();
+        }, 300); // Wait for fade out animation to complete
       }, 3000);
-      return () => clearTimeout(timer);
     }
+
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
   }, [isOpen, onClose]);
 
   return (

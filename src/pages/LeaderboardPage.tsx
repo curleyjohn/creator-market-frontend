@@ -1,17 +1,8 @@
 import { useEffect, useState } from "react";
+import { collection, onSnapshot } from "firebase/firestore";
 import { db } from "../lib/firebase";
-import { collection, onSnapshot, collectionGroup } from "firebase/firestore";
 import { Transition } from "@headlessui/react";
 import { TrophyIcon } from "@heroicons/react/24/outline";
-
-interface User {
-  id: string;
-  displayName: string;
-  photoURL: string | null;
-  balance: number;
-  portfolioValue: number;
-  netWorth: number;
-}
 
 const LeaderboardPage = () => {
   const [users, setUsers] = useState<any[]>([]);
@@ -30,7 +21,7 @@ const LeaderboardPage = () => {
     });
 
     // 2. Listen to portfolios
-    const unsubPortfolios = onSnapshot(collectionGroup(db, "portfolio"), (snapshot) => {
+    const unsubPortfolios = onSnapshot(collection(db, "portfolio"), (snapshot) => {
       const grouped: { [userId: string]: any[] } = {};
       snapshot.docs.forEach((doc) => {
         const pathParts = doc.ref.path.split("/");
