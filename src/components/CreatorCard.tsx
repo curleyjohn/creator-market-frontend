@@ -95,7 +95,7 @@ const CreatorCard = ({
         <h2 className="text-lg font-semibold text-[var(--text)]">{creator.name}</h2>
         <p className="text-sm text-[var(--accent-text)] capitalize mb-1">{creator.platform}</p>
 
-        <div className="flex flex-col gap-1">
+        <div className="flex gap-1 items-center">
           <p className="text-sm text-gray-300">
             Price: <span className="font-medium">{creator.price?.toFixed(2)} CC</span>
           </p>
@@ -109,7 +109,7 @@ const CreatorCard = ({
               leaveFrom="opacity-100 scale-100"
               leaveTo="opacity-0 scale-95"
             >
-              <span className={`text-xs font-semibold ${priceChange >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+              <span className={`text-xs ml-2 font-semibold ${priceChange >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                 {priceChange >= 0 ? '+' : ''}{priceChange.toFixed(2)}
               </span>
             </Transition>
