@@ -11,47 +11,55 @@ const LeaderboardPage = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // 1. Listen to users
+    let unsubPortfolios: (() => void)[] = [];
+
+    // 1. Listen to users and their portfolios
     const unsubUsers = onSnapshot(collection(db, "users"), (snapshot) => {
       const usersData = snapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }));
       setUsers(usersData);
-    });
 
-    // 2. Listen to portfolios
-    const unsubPortfolios = onSnapshot(collection(db, "portfolio"), (snapshot) => {
-      const grouped: { [userId: string]: any[] } = {};
-      snapshot.docs.forEach((doc) => {
-        const pathParts = doc.ref.path.split("/");
-        const userId = pathParts[1];
-        if (!grouped[userId]) grouped[userId] = [];
-        grouped[userId].push({
-          id: doc.id,
-          ...doc.data(),
+      // Clean up existing portfolio listeners
+      unsubPortfolios.forEach(unsub => unsub());
+      unsubPortfolios = [];
+
+      // Set up new portfolio listeners for each user
+      usersData.forEach(user => {
+        const portfolioRef = collection(db, "users", user.id, "portfolio");
+        const unsubPortfolio = onSnapshot(portfolioRef, (portfolioSnapshot) => {
+          const portfolioItems = portfolioSnapshot.docs.map(doc => ({
+            id: doc.id,
+            creatorId: doc.id,
+            ...doc.data()
+          }));
+
+          setPortfolios(prev => ({
+            ...prev,
+            [user.id]: portfolioItems
+          }));
         });
+        unsubPortfolios.push(unsubPortfolio);
       });
-      setPortfolios(grouped);
     });
 
-    // 3. Listen to creators
+    // 2. Listen to creators
     const unsubCreators = onSnapshot(collection(db, "creators"), (snapshot) => {
       const creatorsData: { [id: string]: any } = {};
       snapshot.docs.forEach((doc) => {
         creatorsData[doc.id] = doc.data();
       });
       setCreators(creatorsData);
+      setLoading(false);
     });
-
-    setLoading(false);
 
     return () => {
       unsubUsers();
-      unsubPortfolios();
       unsubCreators();
+      unsubPortfolios.forEach(unsub => unsub());
     };
-  }, []);
+  }, []); // No dependencies needed as we handle all updates inside
 
   // Calculate Leaderboard
   const leaders = users.map((user) => {
@@ -149,13 +157,13 @@ const LeaderboardPage = () => {
                         </div>
                       </td>
                       <td className="py-4 px-6 text-right whitespace-nowrap">
-                        <div className="text-[var(--text)]">${user.balance.toLocaleString()}</div>
+                        <div className="text-[var(--text)]">{user.balance.toLocaleString()} CC</div>
                       </td>
                       <td className="py-4 px-6 text-right whitespace-nowrap">
-                        <div className="text-[var(--text)]">${user.portfolioValue.toLocaleString()}</div>
+                        <div className="text-[var(--text)]">{user.portfolioValue.toLocaleString()} CC</div>
                       </td>
                       <td className="py-4 px-6 text-right whitespace-nowrap">
-                        <div className="font-medium text-[var(--text)]">${user.netWorth.toLocaleString()}</div>
+                        <div className="font-medium text-[var(--text)]">{user.netWorth.toLocaleString()} CC</div>
                       </td>
                     </tr>
                   );
