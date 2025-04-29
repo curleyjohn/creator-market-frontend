@@ -7,6 +7,7 @@ import CreatorListPage from "../pages/CreatorListpage";
 import TransactionsPage from "../pages/TransactionPage";
 import PortfolioPage from "../pages/PortfolioPage";
 import LeaderboardPage from "../pages/LeaderboardPage";
+import MarketPage from "../pages/MarketPage";
 
 const router = createBrowserRouter([
   {
@@ -22,6 +23,7 @@ const router = createBrowserRouter([
     ),
     children: [
       { path: "", element: <CreatorListPage /> },
+      { path: "market", element: <MarketPage /> },
       { path: "transactions", element: <TransactionsPage /> },
       { path: "portfolio", element: <PortfolioPage /> },
       { path: "leaderboard", element: <LeaderboardPage /> },
