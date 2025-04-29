@@ -2,6 +2,7 @@ import { useState } from "react";
 import { buyCreator } from "../lib/trading";
 import TransactionConfirmation from "./TransactionConfirmation";
 import { Transition } from "@headlessui/react";
+import { CurrencyDollarIcon } from "@heroicons/react/24/outline";
 
 const BuyModal = ({ userId, creator, onClose }: any) => {
   const [quantity, setQuantity] = useState(1);
@@ -11,7 +12,6 @@ const BuyModal = ({ userId, creator, onClose }: any) => {
 
   const handleBuy = async () => {
     setLoading(true);
-    setError("");
     try {
       await buyCreator({
         userId,
@@ -29,71 +29,101 @@ const BuyModal = ({ userId, creator, onClose }: any) => {
     setLoading(false);
   };
 
+  const totalCost = quantity * creator.price;
+
   return (
     <>
-      <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50">
+      <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex justify-center items-center z-50">
         <Transition
           show={true}
-          enter="transition ease-out duration-200"
+          enter="transition ease-out duration-300"
           enterFrom="opacity-0 scale-95"
           enterTo="opacity-100 scale-100"
-          leave="transition ease-in duration-150"
+          leave="transition ease-in duration-200"
           leaveFrom="opacity-100 scale-100"
           leaveTo="opacity-0 scale-95"
         >
-          <div className="bg-[var(--bg)] p-6 rounded-xl w-full max-w-sm border border-accent">
-            <h2 className="text-xl font-bold text-[var(--text)] mb-4">
-              Buy {creator.name}
-            </h2>
-
-            <div className="relative">
-              <input
-                type="number"
-                min="1"
-                value={quantity}
-                onChange={(e) => setQuantity(Number(e.target.value))}
-                className="w-full p-2 border rounded mb-4 text-black focus:ring-2 focus:ring-accent focus:border-transparent transition-all"
-                disabled={loading}
-              />
-
+          <div className="bg-[var(--bg)] p-8 rounded-2xl w-full max-w-md border border-accent/20 shadow-xl">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center">
+                <CurrencyDollarIcon className="w-6 h-6 text-accent" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-[var(--text)]">
+                  Buy {creator.name}
+                </h2>
+                <p className="text-[var(--text-secondary)] text-sm">
+                  Current price: ${creator.price.toFixed(2)}
+                </p>
+              </div>
             </div>
 
-            <Transition
-              show={!!error}
-              enter="transition ease-out duration-200"
-              enterFrom="opacity-0 -translate-y-1"
-              enterTo="opacity-100 translate-y-0"
-              leave="transition ease-in duration-150"
-              leaveFrom="opacity-100 translate-y-0"
-              leaveTo="opacity-0 -translate-y-1"
-            >
-              <p className="text-red-500 text-sm mb-2">
-                {error}
-              </p>
-            </Transition>
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="quantity" className="block text-sm font-medium text-[var(--text-secondary)] mb-1">
+                  Quantity
+                </label>
+                <div className="relative">
+                  <input
+                    id="quantity"
+                    type="number"
+                    min="1"
+                    value={quantity}
+                    onChange={(e) => setQuantity(Number(e.target.value))}
+                    className="w-full p-3 border rounded-lg bg-[var(--bg-secondary)] text-[var(--text)] border-accent/20 focus:ring-2 focus:ring-accent focus:border-transparent transition-all"
+                    disabled={loading}
+                  />
+                </div>
+              </div>
 
-            <div className="flex justify-end gap-2 mt-4">
-              <button
-                onClick={onClose}
-                disabled={loading}
-                className="px-4 py-1 rounded border text-theme border-accent hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleBuy}
-                disabled={loading}
-                className="px-4 py-1 rounded bg-accent text-accent-text font-semibold hover:bg-accent/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed relative"
-              >
-                {loading ? (
-                  <span className="flex items-center gap-2">
-                    <span className="animate-pulse">Processing</span>
-                    <div className="w-4 h-4 border-2 border-accent-text border-t-transparent rounded-full animate-spin"></div>
+              <div className="bg-[var(--bg-secondary)] p-4 rounded-lg border border-accent/10">
+                <div className="flex justify-between items-center">
+                  <span className="text-[var(--text-secondary)]">Total Cost</span>
+                  <span className="text-lg font-semibold text-[var(--text)]">
+                    ${totalCost.toFixed(2)}
                   </span>
-                ) : (
-                  "Confirm Buy"
-                )}
-              </button>
+                </div>
+              </div>
+
+              <Transition
+                show={!!error}
+                enter="transition ease-out duration-200"
+                enterFrom="opacity-0 -translate-y-1"
+                enterTo="opacity-100 translate-y-0"
+                leave="transition ease-in duration-150"
+                leaveFrom="opacity-100 translate-y-0"
+                leaveTo="opacity-0 -translate-y-1"
+              >
+                <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+                  <p className="text-red-500 text-sm">
+                    {error}
+                  </p>
+                </div>
+              </Transition>
+
+              <div className="flex justify-end gap-3 mt-6">
+                <button
+                  onClick={onClose}
+                  disabled={loading}
+                  className="px-5 py-2.5 rounded-lg border text-[var(--text)] border-accent/20 hover:bg-[var(--bg-secondary)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleBuy}
+                  disabled={loading}
+                  className="px-5 py-2.5 rounded-lg bg-accent text-accent-text font-semibold hover:bg-accent/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed relative"
+                >
+                  {loading ? (
+                    <span className="flex items-center gap-2">
+                      <span className="animate-pulse">Processing</span>
+                      <div className="w-4 h-4 border-2 border-accent-text border-t-transparent rounded-full animate-spin"></div>
+                    </span>
+                  ) : (
+                    "Confirm Purchase"
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </Transition>
