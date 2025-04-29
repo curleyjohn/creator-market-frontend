@@ -41,12 +41,12 @@
    Theme Variants
 -------------------------------- */
 .theme-dark {
-  --bg: #000000;
-  --sidebar-bg: #1a1a1a;
-  --topbar-bg: #000000;
+  --bg: #1a1a1a;
+  --sidebar-bg: #2a2a2a;
+  --topbar-bg: #1a1a1a;
   --topbar-text: #ffffff;
   --text: #ffffff;
-  --accent: #FF8C00;
+  --accent: #3B82F6;
   --accent-text: #ffffff;
 }
 

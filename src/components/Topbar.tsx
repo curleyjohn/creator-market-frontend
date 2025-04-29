@@ -3,6 +3,7 @@ import { useAuth } from "../context/AuthContext";
 import ThemeDropdown from "./ThemeDropdown";
 import { getDocs, onSnapshot, doc, collection } from "firebase/firestore";
 import { db } from "../lib/firebase";
+import { CurrencyDollarIcon, ChartBarIcon } from "@heroicons/react/24/outline";
 
 interface TopbarProps {
   onMenuClick: () => void;
@@ -81,38 +82,46 @@ const Topbar = ({ onMenuClick }: TopbarProps) => {
   }, [user?.uid]);
 
   return (
-    <header className="w-full flex justify-between items-center py-4 px-6 border-b border-[var(--accent)] bg-[var(--topbar-bg)] text-[var(--topbar-text)] transition-all">
-      <div className="flex gap-2 items-center">
-        <div className="text-sm font-medium bg-[var(--sidebar-bg)] px-3 py-1 rounded-full border border-[var(--accent)]">
-          💰 Balance: {balance.toLocaleString()} CC
+    <header className="w-full flex justify-between items-center py-4 px-6 border-b border-[var(--accent)]/20 bg-[var(--topbar-bg)] text-[var(--topbar-text)] transition-all">
+      {/* Left Section - Balance and Portfolio */}
+      <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--sidebar-bg)] border border-[var(--accent)]/20">
+          <CurrencyDollarIcon className="w-5 h-5 text-[var(--accent)]" />
+          <span className="text-sm font-medium text-[var(--text)]">
+            {balance.toLocaleString()} CC
+          </span>
         </div>
-        <div className="text-sm font-medium bg-[var(--sidebar-bg)] px-3 py-1 rounded-full border border-[var(--accent)]">
-          📈 Portfolio: {portfolioValue.toLocaleString()} CC
+        <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--sidebar-bg)] border border-[var(--accent)]/20">
+          <ChartBarIcon className="w-5 h-5 text-[var(--accent)]" />
+          <span className="text-sm font-medium text-[var(--text)]">
+            {portfolioValue.toLocaleString()} CC
+          </span>
         </div>
       </div>
 
-      {/* Mobile menu button */}
-      <button className="md:hidden" onClick={onMenuClick}>
-        <svg
-          className="w-6 h-6 text-topbar"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          viewBox="0 0 24 24"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-        </svg>
-      </button>
-
-      {/* Theme Dropdown and User Avatar */}
-      <div className="flex items-center gap-4 ml-auto">
+      {/* Right Section - Theme and User */}
+      <div className="flex items-center gap-4">
         <ThemeDropdown
           themes={themes}
           selectedTheme={selectedTheme}
           setSelectedTheme={setSelectedTheme}
         />
+
+        {/* Mobile menu button */}
+        <button className="md:hidden" onClick={onMenuClick}>
+          <svg
+            className="w-6 h-6 text-[var(--accent)]"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+
         {user && (
-          <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-accent">
+          <div className="w-10 h-10 rounded-lg overflow-hidden border-2 border-[var(--accent)] bg-[var(--sidebar-bg)]">
             {user.photoURL ? (
               <img
                 src={user.photoURL}
@@ -120,7 +129,7 @@ const Topbar = ({ onMenuClick }: TopbarProps) => {
                 className="w-full h-full object-cover"
               />
             ) : (
-              <div className="w-full h-full flex items-center justify-center bg-grayDark text-white">
+              <div className="w-full h-full flex items-center justify-center text-[var(--text)]">
                 {user.displayName?.charAt(0).toUpperCase()}
               </div>
             )}
