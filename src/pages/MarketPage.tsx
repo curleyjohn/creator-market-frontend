@@ -38,22 +38,11 @@ const MarketPage = () => {
   const [creators, setCreators] = useState<Creator[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Separate effect for price history
   useEffect(() => {
     const creatorsRef = collection(db, 'creators');
-    const usersRef = collection(db, 'users');
-
-    // Listen to creators for market cap and prices
     const unsubCreators = onSnapshot(creatorsRef, (snapshot) => {
-      let totalCap = 0;
-      let totalPriceChange = 0;
-      const creatorsData: Creator[] = [];
-
       snapshot.forEach(doc => {
-        const data = doc.data();
-        const marketCap = (data.price || 0) * (data.ownerCount || 0);
-        totalCap += marketCap;
-
-        // Get price history for this creator
         const priceHistoryRef = collection(db, 'creators', doc.id, 'priceHistory');
         const priceHistoryQuery = query(
           priceHistoryRef,
@@ -64,14 +53,14 @@ const MarketPage = () => {
           const now = new Date();
           const last24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
 
-          let priceChange24h = 0;
-          const currentPrice = data.price || 0;
-
           // Find the price from 24 hours ago
           const oldPriceDoc = priceHistorySnap.docs.find(doc => {
             const timestamp = doc.data().timestamp;
             return timestamp && timestamp.toDate && timestamp.toDate() <= last24h;
           });
+
+          const currentPrice = doc.data().price || 0;
+          let priceChange24h = 0;
 
           if (oldPriceDoc) {
             const oldPrice = oldPriceDoc.data().price || 0;
@@ -88,15 +77,34 @@ const MarketPage = () => {
             });
 
             // Update total price change
-            setMarketStats(prev => {
-              const newTotalChange = updated.reduce((sum: number, creator: Creator) => sum + creator.priceChange24h, 0);
-              const avgChange = updated.length > 0 ? newTotalChange / updated.length : 0;
-              return { ...prev, priceChange24h: avgChange };
-            });
+            const newTotalChange = updated.reduce((sum: number, creator: Creator) => sum + creator.priceChange24h, 0);
+            const avgChange = updated.length > 0 ? newTotalChange / updated.length : 0;
+            setMarketStats(prev => ({ ...prev, priceChange24h: avgChange }));
 
             return updated;
           });
         });
+
+        return unsubPriceHistory;
+      });
+    });
+
+    return () => {
+      unsubCreators();
+    };
+  }, []);
+
+  // Separate effect for market cap and other stats
+  useEffect(() => {
+    const creatorsRef = collection(db, 'creators');
+    const unsubCreators = onSnapshot(creatorsRef, (snapshot) => {
+      let totalCap = 0;
+      const creatorsData: Creator[] = [];
+
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        const marketCap = (data.price || 0) * (data.ownerCount || 0);
+        totalCap += marketCap;
 
         creatorsData.push({
           id: doc.id,
@@ -107,18 +115,31 @@ const MarketPage = () => {
           volume24h: data.volume24h || 0,
           marketCap
         });
-
-        return unsubPriceHistory;
       });
 
-      setCreators(creatorsData);
+      setCreators(prev => {
+        // Merge with existing price changes
+        const updated = creatorsData.map(newCreator => {
+          const existingCreator = prev.find(c => c.id === newCreator.id);
+          return existingCreator ? { ...newCreator, priceChange24h: existingCreator.priceChange24h } : newCreator;
+        });
+        return updated;
+      });
+
       setMarketStats(prev => ({
         ...prev,
         totalMarketCap: totalCap
       }));
     });
 
-    // Listen to all users' transactions
+    return () => {
+      unsubCreators();
+    };
+  }, []);
+
+  // Separate effect for transactions
+  useEffect(() => {
+    const usersRef = collection(db, 'users');
     const unsubUsers = onSnapshot(usersRef, (usersSnapshot) => {
       const now = new Date();
       const last24h = new Date(now.getTime() - 24 * 60 * 60 * 1000);
@@ -127,7 +148,6 @@ const MarketPage = () => {
       const traders = new Set<string>();
       const creatorVolumes: { [id: string]: number } = {};
 
-      // Process each user's transactions
       usersSnapshot.forEach(userDoc => {
         const transactionsRef = collection(db, 'users', userDoc.id, 'transactions');
         const unsubTransactions = onSnapshot(
@@ -146,7 +166,6 @@ const MarketPage = () => {
               }
             });
 
-            // Only add the user to traders set if they have traded in the last 24h
             if (userHasTraded) {
               traders.add(userDoc.id);
             }
@@ -157,7 +176,6 @@ const MarketPage = () => {
               activeTraders: traders.size
             }));
 
-            // Update creator volumes
             setCreators(prev => prev.map(creator => ({
               ...creator,
               volume24h: creatorVolumes[creator.id] || 0
@@ -172,7 +190,6 @@ const MarketPage = () => {
     setLoading(false);
 
     return () => {
-      unsubCreators();
       unsubUsers();
     };
   }, []);
