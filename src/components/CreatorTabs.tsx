@@ -7,7 +7,6 @@ import CreatorCard from "./CreatorCard";
 import { useAuth } from "../context/AuthContext";
 import { collection, onSnapshot, getDocs } from "firebase/firestore";
 import { db } from "../lib/firebase";
-import Loading from "./Loading";
 import { Transition } from "@headlessui/react";
 
 const TABS = ["YouTube", "Twitch"] as const;
@@ -128,9 +127,9 @@ const CreatorTabs = () => {
             leaveTo="opacity-0 scale-95"
           >
             <button
-              className={`px-4 py-2 rounded-full font-semibold transition-all duration-300 transform hover:scale-105 active:scale-95 ${activeTab === tab
-                  ? "bg-accent text-accent-text shadow-lg"
-                  : "border border-accent text-theme hover:bg-accent/10"
+              className={`px-4 py-2 rounded-full font-semibold transition-all duration-300 transform hover:scale-95 active:scale-95 ${activeTab === tab
+                ? "bg-accent text-accent-text shadow-lg"
+                : "border border-accent text-theme hover:bg-accent/10"
                 }`}
               onClick={() => handleTabClick(tab)}
             >

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { collection, getDocs, query, orderBy } from "firebase/firestore";
 import { db } from "../lib/firebase";
-import Loading from "./Loading";
+import { Transition } from "@headlessui/react";
 
 const TransactionHistory = ({ userId }: { userId: string }) => {
   const [transactions, setTransactions] = useState<any[]>([]);
@@ -27,37 +27,68 @@ const TransactionHistory = ({ userId }: { userId: string }) => {
 
   return (
     <div className="bg-[var(--bg)] text-[var(--text)] p-2 overflow-auto">
-      {loading ? <Loading /> :
-        <>
-          {
-            transactions.length === 0 ? (
-              <p className="text-sm text-gray-400">No transactions yet.</p>
-            ) : (
-              <ul className="space-y-2">
-                {transactions.map((tx) => (
-                  <li
-                    key={tx.id}
-                    className={`p-3 rounded border ${tx.type === "buy" ? "border-green-500" : "border-red-500"
-                      }`}
-                  >
-                    <div className="text-sm font-medium">
-                      {tx.type === "buy" ? "🟢 Bought" : "🔴 Sold"} {tx.quantity}x{" "}
-                      {tx.creatorId}
-                    </div>
-                    <div className="text-xs text-gray-400">
-                      Price: {tx.price?.toFixed(2)} CC • Total:{" "}
-                      {(tx.price * tx.quantity).toFixed(2)} CC
-                    </div>
-                    <div className="text-xs text-gray-500 mt-1">
-                      {tx.timestamp?.toDate().toLocaleString()}
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )
-          }
-        </>
-      }
+      <Transition
+        show={!loading}
+        enter="transition ease-out duration-300"
+        enterFrom="opacity-0"
+        enterTo="opacity-100"
+        leave="transition ease-in duration-200"
+        leaveFrom="opacity-100"
+        leaveTo="opacity-0"
+      >
+        <div>
+          {transactions.length === 0 ? (
+            <p className="text-sm text-gray-400">No transactions yet.</p>
+          ) : (
+            <ul className="space-y-2">
+              {transactions.map((tx) => (
+                <li
+                  key={tx.id}
+                  className={`p-3 rounded border ${tx.type === "buy" ? "border-green-500" : "border-red-500"
+                    }`}
+                >
+                  <div className="text-sm font-medium">
+                    {tx.type === "buy" ? "🟢 Bought" : "🔴 Sold"} {tx.quantity}x{" "}
+                    {tx.creatorId}
+                  </div>
+                  <div className="text-xs text-gray-400">
+                    Price: {tx.price?.toFixed(2)} CC • Total:{" "}
+                    {(tx.price * tx.quantity).toFixed(2)} CC
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    {tx.timestamp?.toDate().toLocaleString()}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </Transition>
+
+      <Transition
+        show={loading}
+        enter="transition ease-out duration-300"
+        enterFrom="opacity-0"
+        enterTo="opacity-100"
+        leave="transition ease-in duration-200"
+        leaveFrom="opacity-100"
+        leaveTo="opacity-0"
+      >
+        <div>
+          <ul className="space-y-2">
+            {[...Array(5)].map((_, i) => (
+              <li
+                key={i}
+                className="p-3 rounded border border-gray-300 animate-pulse"
+              >
+                <div className="h-4 w-48 bg-gray-300 rounded mb-2"></div>
+                <div className="h-3 w-64 bg-gray-300 rounded mb-1"></div>
+                <div className="h-3 w-32 bg-gray-300 rounded"></div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </Transition>
     </div>
   );
 };

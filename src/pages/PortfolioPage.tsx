@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { collection, onSnapshot } from "firebase/firestore";
 import { useAuth } from "../context/AuthContext";
 import { db } from "../lib/firebase";
-import Loading from "../components/Loading";
+import { Transition } from "@headlessui/react";
 
 const PortfolioPage = () => {
   const { user } = useAuth();
@@ -65,52 +65,92 @@ const PortfolioPage = () => {
     <div className="h-full overflow-auto">
       <h1 className="text-2xl font-bold mb-4">Your Portfolio</h1>
 
-      {loading ? (
-        <Loading />
-      ) : combinedPortfolio.length === 0 ? (
-        <p className="text-sm text-gray-400">You don't own any creators yet.</p>
-      ) : (
-        <>
-          <div className="mb-6 text-lg font-semibold text-[var(--accent)]">
-            Total Portfolio Value: {totalValue.toLocaleString()} CC
-          </div>
+      <Transition
+        show={!loading}
+        enter="transition ease-out duration-300"
+        enterFrom="opacity-0"
+        enterTo="opacity-100"
+        leave="transition ease-in duration-200"
+        leaveFrom="opacity-100"
+        leaveTo="opacity-0"
+      >
+        <div>
+          {combinedPortfolio.length === 0 ? (
+            <p className="text-sm text-gray-400">You don't own any creators yet.</p>
+          ) : (
+            <div>
+              <div className="mb-6 text-lg font-semibold text-[var(--accent)]">
+                Total Portfolio Value: {totalValue.toLocaleString()} CC
+              </div>
 
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {combinedPortfolio.map((item) => {
+                  const gainLossPercent =
+                    ((item.currentPrice - item.averageBuyPrice) / item.averageBuyPrice) * 100;
+
+                  return (
+                    <div
+                      key={item.creatorId}
+                      className="bg-[var(--sidebar-bg)] border border-[var(--accent)] p-4 rounded-lg"
+                    >
+                      <div className="text-xl font-bold">{item.name}</div>
+                      <div className="text-sm text-gray-400">{item.platform}</div>
+
+                      <div className="mt-2 text-sm">
+                        Owned: {item.quantity} ×{" "}
+                        <span className="text-[var(--accent)]">
+                          {item.currentPrice.toFixed(2)} CC
+                        </span>
+                      </div>
+
+                      <div className="text-sm font-medium mt-1">
+                        Value: {item.value.toFixed(2)} CC
+                      </div>
+
+                      <div className="text-sm font-semibold mt-2">
+                        Return:{" "}
+                        <span className={gainLossPercent >= 0 ? "text-green-500" : "text-red-500"}>
+                          {gainLossPercent.toFixed(2)}%
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      </Transition>
+
+      <Transition
+        show={loading}
+        enter="transition ease-out duration-300"
+        enterFrom="opacity-0"
+        enterTo="opacity-100"
+        leave="transition ease-in duration-200"
+        leaveFrom="opacity-100"
+        leaveTo="opacity-0"
+      >
+        <div>
+          <div className="mb-6">
+            <div className="h-6 w-48 bg-gray-300 rounded animate-pulse"></div>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {combinedPortfolio.map((item) => {
-              const gainLossPercent =
-                ((item.currentPrice - item.averageBuyPrice) / item.averageBuyPrice) * 100;
-
-              return (
-                <div
-                  key={item.creatorId}
-                  className="bg-[var(--sidebar-bg)] border border-[var(--accent)] p-4 rounded-lg"
-                >
-                  <div className="text-xl font-bold">{item.name}</div>
-                  <div className="text-sm text-gray-400">{item.platform}</div>
-
-                  <div className="mt-2 text-sm">
-                    Owned: {item.quantity} ×{" "}
-                    <span className="text-[var(--accent)]">
-                      {item.currentPrice.toFixed(2)} CC
-                    </span>
-                  </div>
-
-                  <div className="text-sm font-medium mt-1">
-                    Value: {item.value.toFixed(2)} CC
-                  </div>
-
-                  <div className="text-sm font-semibold mt-2">
-                    Return:{" "}
-                    <span className={gainLossPercent >= 0 ? "text-green-500" : "text-red-500"}>
-                      {gainLossPercent.toFixed(2)}%
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
+            {[...Array(4)].map((_, i) => (
+              <div
+                key={i}
+                className="bg-[var(--sidebar-bg)] border border-[var(--accent)] p-4 rounded-lg animate-pulse"
+              >
+                <div className="h-6 w-32 bg-gray-300 rounded mb-2"></div>
+                <div className="h-4 w-24 bg-gray-300 rounded mb-4"></div>
+                <div className="h-4 w-40 bg-gray-300 rounded mb-2"></div>
+                <div className="h-4 w-32 bg-gray-300 rounded mb-2"></div>
+                <div className="h-4 w-28 bg-gray-300 rounded"></div>
+              </div>
+            ))}
           </div>
-        </>
-      )}
+        </div>
+      </Transition>
     </div>
   );
 };

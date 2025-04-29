@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { db } from "../lib/firebase";
 import { collection, onSnapshot, collectionGroup } from "firebase/firestore";
-import Loading from "../components/Loading";
+import { Transition } from "@headlessui/react";
 
 const LeaderboardPage = () => {
   const [users, setUsers] = useState<any[]>([]);
@@ -81,9 +81,15 @@ const LeaderboardPage = () => {
     <div className="h-full flex-shrink flex-1 overflow-auto">
       <h1 className="text-2xl font-bold mb-6 text-[var(--accent)]">Leaderboard</h1>
 
-      {loading ? (
-        <Loading />
-      ) : (
+      <Transition
+        show={!loading}
+        enter="transition ease-out duration-300"
+        enterFrom="opacity-0"
+        enterTo="opacity-100"
+        leave="transition ease-in duration-200"
+        leaveFrom="opacity-100"
+        leaveTo="opacity-0"
+      >
         <div className="overflow-x-auto">
           <table className="min-w-full text-left border-collapse">
             <thead>
@@ -125,10 +131,58 @@ const LeaderboardPage = () => {
                 );
               })}
             </tbody>
-
           </table>
         </div>
-      )}
+      </Transition>
+
+      <Transition
+        show={loading}
+        enter="transition ease-out duration-300"
+        enterFrom="opacity-0"
+        enterTo="opacity-100"
+        leave="transition ease-in duration-200"
+        leaveFrom="opacity-100"
+        leaveTo="opacity-0"
+      >
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-left border-collapse">
+            <thead>
+              <tr>
+                <th className="py-2 px-2 border-b border-[var(--accent)] text-sm md:text-base">Rank</th>
+                <th className="py-2 px-2 border-b border-[var(--accent)] text-sm md:text-base">User</th>
+                <th className="py-2 px-2 border-b border-[var(--accent)] text-sm md:text-base">Balance</th>
+                <th className="py-2 px-2 border-b border-[var(--accent)] text-sm md:text-base">Portfolio</th>
+                <th className="py-2 px-2 border-b border-[var(--accent)] text-sm md:text-base">Net Worth</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {[...Array(10)].map((_, i) => (
+                <tr key={i} className="border-b border-[var(--accent)] animate-pulse">
+                  <td className="p-2">
+                    <div className="h-4 w-6 bg-gray-300 rounded mx-auto"></div>
+                  </td>
+                  <td className="p-2">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-gray-300"></div>
+                      <div className="h-4 w-24 bg-gray-300 rounded"></div>
+                    </div>
+                  </td>
+                  <td className="p-2">
+                    <div className="h-4 w-16 bg-gray-300 rounded"></div>
+                  </td>
+                  <td className="p-2">
+                    <div className="h-4 w-16 bg-gray-300 rounded"></div>
+                  </td>
+                  <td className="p-2">
+                    <div className="h-4 w-16 bg-gray-300 rounded"></div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Transition>
     </div>
   );
 };
