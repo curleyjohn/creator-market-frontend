@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import BuyModal from "./BuyModal";
 import SellModal from "./SellModal";
+import PriceHistoryGraph from "./PriceHistoryGraph";
 import { Transition } from "@headlessui/react";
 
 const CreatorCard = ({
@@ -94,7 +95,7 @@ const CreatorCard = ({
         <h2 className="text-lg font-semibold text-[var(--text)]">{creator.name}</h2>
         <p className="text-sm text-[var(--accent-text)] capitalize mb-1">{creator.platform}</p>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col gap-1">
           <p className="text-sm text-gray-300">
             Price: <span className="font-medium">{creator.price?.toFixed(2)} CC</span>
           </p>
@@ -114,6 +115,8 @@ const CreatorCard = ({
             </Transition>
           )}
         </div>
+
+        <PriceHistoryGraph creatorId={creator.id} />
 
         {/* Buy/Sell Buttons */}
         <div className="flex gap-3 mt-4">
