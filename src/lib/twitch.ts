@@ -74,7 +74,7 @@ export const fetchTwitchCreators = async (usernames: string[]) => {
           totalSells = existing?.sells ?? 0;
         }
 
-        const price = calculateFinalPrice({
+        const price = await calculateFinalPrice({
           subscribers: 0,
           newSubscribers: 0,
           newViews: views,
@@ -82,6 +82,7 @@ export const fetchTwitchCreators = async (usernames: string[]) => {
           postedThisWeek: false,
           totalBuys,
           totalSells,
+          creatorId: id,
         });
 
         const ownerCount = ownerMap[id] || 0;

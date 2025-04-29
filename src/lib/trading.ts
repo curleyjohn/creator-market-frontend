@@ -5,8 +5,9 @@ import {
   collection,
   serverTimestamp,
   runTransaction,
+  getDoc,
 } from "firebase/firestore";
-import { calculateFinalPrice } from "./price";
+import { calculateFinalPrice, savePriceHistory } from "./price";
 
 export const buyCreator = async ({
   userId,
@@ -46,7 +47,7 @@ export const buyCreator = async ({
       sells = creatorData.sells || 0;
     }
 
-    const livePrice = calculateFinalPrice({
+    const livePrice = await calculateFinalPrice({
       subscribers: creator.subscribers,
       newSubscribers: 0,
       newViews: creator.views,
@@ -102,17 +103,19 @@ export const buyCreator = async ({
     }
 
     // 3. Update creator buys and recalculate price
+    const newPrice = await calculateFinalPrice({
+      subscribers: creator.subscribers,
+      newSubscribers: 0,
+      newViews: creator.views,
+      postedThisWeek: false,
+      totalBuys: buys + quantity,
+      totalSells: sells,
+    });
+
     transaction.update(creatorRef, {
       buys: increment(quantity),
       lastUpdated: serverTimestamp(),
-      price: calculateFinalPrice({
-        subscribers: creator.subscribers,
-        newSubscribers: 0,
-        newViews: creator.views,
-        postedThisWeek: false,
-        totalBuys: buys + quantity,
-        totalSells: sells,
-      }),
+      price: newPrice,
     });
 
     // 4. Log transaction
@@ -125,6 +128,12 @@ export const buyCreator = async ({
       total: totalCost,
       timestamp: serverTimestamp(),
     });
+  }).then(async () => {
+    // Save price history after transaction is complete
+    const creatorSnap = await getDoc(creatorRef);
+    if (creatorSnap.exists()) {
+      await savePriceHistory(creator.id, creatorSnap.data().price);
+    }
   });
 };
 
@@ -166,7 +175,7 @@ export const sellCreator = async ({
     const buys = creatorSnap.exists() ? creatorSnap.data().buys || 0 : 0;
     const sells = creatorSnap.exists() ? creatorSnap.data().sells || 0 : 0;
 
-    const livePrice = calculateFinalPrice({
+    const livePrice = await calculateFinalPrice({
       subscribers: creator.subscribers,
       newSubscribers: 0,
       newViews: creator.views,
@@ -202,17 +211,19 @@ export const sellCreator = async ({
     }
 
     // 3. Update creator sells and recalculate price
+    const newPrice = await calculateFinalPrice({
+      subscribers: creator.subscribers,
+      newSubscribers: 0,
+      newViews: creator.views,
+      postedThisWeek: false,
+      totalBuys: buys,
+      totalSells: sells + quantity,
+    });
+
     transaction.update(creatorRef, {
       sells: increment(quantity),
       lastUpdated: serverTimestamp(),
-      price: calculateFinalPrice({
-        subscribers: creator.subscribers,
-        newSubscribers: 0,
-        newViews: creator.views,
-        postedThisWeek: false,
-        totalBuys: buys,
-        totalSells: sells + quantity,
-      }),
+      price: newPrice,
     });
 
     // 4. Log transaction
@@ -225,5 +236,11 @@ export const sellCreator = async ({
       total: totalValue,
       timestamp: serverTimestamp(),
     });
+  }).then(async () => {
+    // Save price history after transaction is complete
+    const creatorSnap = await getDoc(creatorRef);
+    if (creatorSnap.exists()) {
+      await savePriceHistory(creator.id, creatorSnap.data().price);
+    }
   });
 };

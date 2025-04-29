@@ -50,7 +50,7 @@ export const fetchYouTubeCreators = async (channelIds: string[]) => {
         totalSells = creatorData?.sells ?? 0;
       }
 
-      const price = calculateFinalPrice({
+      const price = await calculateFinalPrice({
         subscribers,
         newSubscribers: 0,
         newViews: views,
@@ -58,6 +58,7 @@ export const fetchYouTubeCreators = async (channelIds: string[]) => {
         postedThisWeek: false,
         totalBuys,
         totalSells,
+        creatorId: id,
       });
 
       const ownerCount = ownerMap[id] || 0;

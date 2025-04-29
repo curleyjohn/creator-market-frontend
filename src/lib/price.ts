@@ -1,4 +1,7 @@
-// Optionally: import helper for clamping
+import { db } from "./firebase";
+import { doc, collection, setDoc, serverTimestamp } from "firebase/firestore";
+
+// Helper for clamping values
 const clamp = (value: number, min: number, max: number) =>
   Math.max(min, Math.min(max, value));
 
@@ -35,7 +38,7 @@ export const calculateTradingAdjustment = (
   return (totalBuys - totalSells) * 0.25;
 };
 
-export const calculateFinalPrice = ({
+export const calculateFinalPrice = async ({
   subscribers,
   newSubscribers,
   newViews,
@@ -43,6 +46,7 @@ export const calculateFinalPrice = ({
   postedThisWeek = false,
   totalBuys,
   totalSells,
+  creatorId,
 }: {
   subscribers: number;
   newSubscribers: number;
@@ -51,6 +55,7 @@ export const calculateFinalPrice = ({
   postedThisWeek?: boolean;
   totalBuys: number;
   totalSells: number;
+  creatorId?: string;
 }) => {
   const base = calculateBasePrice(subscribers);
   const perf = calculatePerformanceAdjustment({
@@ -61,6 +66,24 @@ export const calculateFinalPrice = ({
   });
   const market = calculateTradingAdjustment(totalBuys, totalSells);
   const rawPrice = base + perf + market;
+  const finalPrice = clamp(parseFloat(rawPrice.toFixed(2)), 50, 10_000);
 
-  return clamp(parseFloat(rawPrice.toFixed(2)), 50, 10_000);
+  // Save price history if creatorId is provided
+  if (creatorId) {
+    const historyRef = doc(collection(db, "creators", creatorId, "priceHistory"));
+    await setDoc(historyRef, {
+      price: finalPrice,
+      timestamp: serverTimestamp(),
+    });
+  }
+
+  return finalPrice;
+};
+
+export const savePriceHistory = async (creatorId: string, price: number) => {
+  const historyRef = doc(collection(db, "creators", creatorId, "priceHistory"));
+  await setDoc(historyRef, {
+    price,
+    timestamp: serverTimestamp(),
+  });
 };
