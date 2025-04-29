@@ -56,7 +56,7 @@ const CreatorCard = ({
               className="w-16 h-16 rounded-full border-2 border-[var(--accent)] object-cover mb-3"
               alt="creator avatar"
             />
-            <div className="absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-[var(--sidebar-bg)] bg-green-500"></div>
+            <div className="absolute bottom-2 -right-2 w-4 h-4 rounded-full border-2 border-[var(--sidebar-bg)] bg-green-500"></div>
           </div>
 
           <div className="flex flex-col ml-4">
