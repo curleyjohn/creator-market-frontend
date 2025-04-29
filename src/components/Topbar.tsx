@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import ThemeDropdown from "./ThemeDropdown";
-import { getDocs, onSnapshot, doc, collection } from "firebase/firestore";
+import { onSnapshot, doc, collection } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import { CurrencyDollarIcon, ChartBarIcon } from "@heroicons/react/24/outline";
 
@@ -20,6 +20,8 @@ const Topbar = ({ onMenuClick }: TopbarProps) => {
   const { user } = useAuth();
   const [balance, setBalance] = useState<number>(0);
   const [portfolioValue, setPortfolioValue] = useState<number>(0);
+  const [portfolioDocs, setPortfolioDocs] = useState<any[]>([]);
+  const [creatorsDocs, setCreatorsDocs] = useState<{ [id: string]: any }>({});
   const [selectedTheme, setSelectedTheme] = useState(() => {
     return localStorage.getItem("theme") ?? "theme-dark";
   });
@@ -45,41 +47,42 @@ const Topbar = ({ onMenuClick }: TopbarProps) => {
     });
 
     // 🔹 Listen to user's portfolio
-    const unsubPortfolio = onSnapshot(portfolioRef, async (portfolioSnap) => {
-      const items = portfolioSnap.docs.map((doc) => ({
+    const unsubPortfolio = onSnapshot(portfolioRef, (snapshot) => {
+      const items = snapshot.docs.map((doc) => ({
         id: doc.id,
+        creatorId: doc.id,
         ...doc.data(),
       }));
+      setPortfolioDocs(items);
+    });
 
-      if (items.length === 0) {
-        setPortfolioValue(0);
-        return;
-      }
-
-      // Get all creators in one go
-      const creatorSnap = await getDocs(creatorsRef);
-      const creatorsData: { [id: string]: any } = {};
-      creatorSnap.forEach((doc) => {
-        creatorsData[doc.id] = doc.data();
+    // 🔹 Listen to creators
+    const unsubCreators = onSnapshot(creatorsRef, (snapshot) => {
+      const items: { [id: string]: any } = {};
+      snapshot.docs.forEach((doc) => {
+        items[doc.id] = doc.data();
       });
-
-      let total = 0;
-      items.forEach((item: any) => {
-        const creator = creatorsData[item.creatorId];
-        if (creator) {
-          const currentPrice = creator.price || 0;
-          total += currentPrice * (item.quantity || 0);
-        }
-      });
-
-      setPortfolioValue(total);
+      setCreatorsDocs(items);
     });
 
     return () => {
       unsubUser();
       unsubPortfolio();
+      unsubCreators();
     };
   }, [user?.uid]);
+
+  // Calculate portfolio value whenever portfolio or creator data changes
+  useEffect(() => {
+    const total = portfolioDocs.reduce((sum, item) => {
+      const creator = creatorsDocs[item.creatorId];
+      const currentPrice = creator?.price || 0;
+      const value = currentPrice * (item.quantity || 0);
+      return sum + value;
+    }, 0);
+
+    setPortfolioValue(total);
+  }, [portfolioDocs, creatorsDocs]);
 
   return (
     <header className="w-full flex justify-between items-center py-4 px-6 border-b border-[var(--accent)]/20 bg-[var(--topbar-bg)] text-[var(--topbar-text)] transition-all">
