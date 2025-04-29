@@ -9,11 +9,10 @@ interface TopbarProps {
 }
 
 const themes = [
-  { name: "Black", value: "theme-black" },
   { name: "Dark", value: "theme-dark" },
-  { name: "Grey", value: "theme-grey" },
-  { name: "Navy", value: "theme-navy" },
-  { name: "White", value: "theme-white" },
+  { name: "Light", value: "theme-light" },
+  { name: "Orange", value: "theme-orange" },
+  { name: "Blue", value: "theme-blue" },
 ];
 
 const Topbar = ({ onMenuClick }: TopbarProps) => {
