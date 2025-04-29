@@ -8,6 +8,7 @@ import { useAuth } from "../context/AuthContext";
 import { collection, onSnapshot, getDocs } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import Loading from "./Loading";
+import { Transition } from "@headlessui/react";
 
 const TABS = ["YouTube", "Twitch"] as const;
 type TabType = (typeof TABS)[number];
@@ -116,22 +117,38 @@ const CreatorTabs = () => {
     <div className="h-full overflow-auto">
       <div className="flex gap-4 mb-6">
         {TABS.map((tab) => (
-          <button
+          <Transition
             key={tab}
-            className={`px-4 py-2 rounded-full font-semibold transition ${activeTab === tab
-              ? "bg-accent text-accent-text"
-              : "border border-accent text-theme"
-              }`}
-            onClick={() => handleTabClick(tab)}
+            show={true}
+            enter="transition ease-out duration-300"
+            enterFrom="opacity-0 scale-95"
+            enterTo="opacity-100 scale-100"
+            leave="transition ease-in duration-200"
+            leaveFrom="opacity-100 scale-100"
+            leaveTo="opacity-0 scale-95"
           >
-            {tab}
-          </button>
+            <button
+              className={`px-4 py-2 rounded-full font-semibold transition-all duration-300 transform hover:scale-105 active:scale-95 ${activeTab === tab
+                  ? "bg-accent text-accent-text shadow-lg"
+                  : "border border-accent text-theme hover:bg-accent/10"
+                }`}
+              onClick={() => handleTabClick(tab)}
+            >
+              {tab}
+            </button>
+          </Transition>
         ))}
       </div>
 
-      {loading ? (
-        <Loading />
-      ) : (
+      <Transition
+        show={!loading}
+        enter="transition ease-out duration-300"
+        enterFrom="opacity-0"
+        enterTo="opacity-100"
+        leave="transition ease-in duration-200"
+        leaveFrom="opacity-100"
+        leaveTo="opacity-0"
+      >
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
           {userId && creators.map((creator: any) => (
             <CreatorCard
@@ -143,7 +160,37 @@ const CreatorTabs = () => {
             />
           ))}
         </div>
-      )}
+      </Transition>
+
+      <Transition
+        show={loading}
+        enter="transition ease-out duration-300"
+        enterFrom="opacity-0"
+        enterTo="opacity-100"
+        leave="transition ease-in duration-200"
+        leaveFrom="opacity-100"
+        leaveTo="opacity-0"
+      >
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+          {[...Array(6)].map((_, i) => (
+            <div
+              key={i}
+              className="bg-[var(--sidebar-bg)] border border-[var(--accent)] rounded-2xl p-5 animate-pulse"
+            >
+              <div className="flex">
+                <div className="w-16 h-16 rounded-full bg-gray-300 mb-3"></div>
+                <div className="ml-4 space-y-2">
+                  <div className="h-4 w-20 bg-gray-300 rounded"></div>
+                  <div className="h-4 w-16 bg-gray-300 rounded"></div>
+                </div>
+              </div>
+              <div className="h-6 w-32 bg-gray-300 rounded mt-2"></div>
+              <div className="h-4 w-24 bg-gray-300 rounded mt-2"></div>
+              <div className="h-10 w-full bg-gray-300 rounded mt-4"></div>
+            </div>
+          ))}
+        </div>
+      </Transition>
     </div>
   );
 };
