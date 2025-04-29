@@ -2,6 +2,16 @@ import { useEffect, useState } from "react";
 import { db } from "../lib/firebase";
 import { collection, onSnapshot, collectionGroup } from "firebase/firestore";
 import { Transition } from "@headlessui/react";
+import { TrophyIcon } from "@heroicons/react/24/outline";
+
+interface User {
+  id: string;
+  displayName: string;
+  photoURL: string | null;
+  balance: number;
+  portfolioValue: number;
+  netWorth: number;
+}
 
 const LeaderboardPage = () => {
   const [users, setUsers] = useState<any[]>([]);
@@ -24,7 +34,7 @@ const LeaderboardPage = () => {
       const grouped: { [userId: string]: any[] } = {};
       snapshot.docs.forEach((doc) => {
         const pathParts = doc.ref.path.split("/");
-        const userId = pathParts[1]; // users/{userId}/portfolio/{docId}
+        const userId = pathParts[1];
         if (!grouped[userId]) grouped[userId] = [];
         grouped[userId].push({
           id: doc.id,
@@ -52,7 +62,7 @@ const LeaderboardPage = () => {
     };
   }, []);
 
-  // 🔥 Compute Leaderboard
+  // Calculate Leaderboard
   const leaders = users.map((user) => {
     const userPortfolio = portfolios[user.id] || [];
     let portfolioValue = 0;
@@ -75,114 +85,120 @@ const LeaderboardPage = () => {
       portfolioValue,
       netWorth,
     };
-  }).sort((a, b) => b.netWorth - a.netWorth); // Sort by net worth
+  }).sort((a, b) => b.netWorth - a.netWorth);
 
   return (
-    <div className="h-full flex-shrink flex-1 overflow-auto">
-      <h1 className="text-2xl font-bold mb-6 text-[var(--accent)]">Leaderboard</h1>
-
-      <Transition
-        show={!loading}
-        enter="transition ease-out duration-300"
-        enterFrom="opacity-0"
-        enterTo="opacity-100"
-        leave="transition ease-in duration-200"
-        leaveFrom="opacity-100"
-        leaveTo="opacity-0"
-      >
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-left border-collapse">
-            <thead>
-              <tr>
-                <th className="py-2 px-2 border-b border-[var(--accent)] text-sm md:text-base">Rank</th>
-                <th className="py-2 px-2 border-b border-[var(--accent)] text-sm md:text-base">User</th>
-                <th className="py-2 px-2 border-b border-[var(--accent)] text-sm md:text-base">Balance</th>
-                <th className="py-2 px-2 border-b border-[var(--accent)] text-sm md:text-base">Portfolio</th>
-                <th className="py-2 px-2 border-b border-[var(--accent)] text-sm md:text-base">Net Worth</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {leaders.map((user, index) => {
-                let nameColor = "text-white";
-                if (index === 0) nameColor = "text-yellow-400"; // Gold
-                else if (index === 1) nameColor = "text-gray-300"; // Silver
-                else if (index === 2) nameColor = "text-orange-500"; // Bronze
-
-                return (
-                  <tr key={user.id} className="border-b border-[var(--accent)] hover:bg-[var(--sidebar-bg)] transition">
-                    <td className="p-2 font-semibold text-center text-xs md:text-sm">
-                      {index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : index + 1}
-                    </td>
-                    <td className="p-2 flex items-center gap-3 text-xs md:text-sm">
-                      {user.photoURL ? (
-                        <img src={user.photoURL} alt="avatar" className="w-8 h-8 rounded-full object-cover" />
-                      ) : (
-                        <div className="w-8 h-8 rounded-full bg-gray-400 flex items-center justify-center text-white font-bold text-sm">
-                          {user.displayName?.charAt(0).toUpperCase()}
-                        </div>
-                      )}
-                      <span className={`font-semibold ${nameColor}`}>{user.displayName}</span>
-                    </td>
-                    <td className="p-2 text-xs md:text-sm">{user.balance.toFixed(2)} CC</td>
-                    <td className="p-2 text-xs md:text-sm">{user.portfolioValue.toFixed(2)} CC</td>
-                    <td className="p-2 font-bold text-xs md:text-sm">{user.netWorth.toFixed(2)} CC</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+    <div className="h-full overflow-auto p-6">
+      {/* Header Section */}
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-12 h-12 rounded-full bg-[var(--accent)]/10 flex items-center justify-center">
+          <TrophyIcon className="w-6 h-6 text-[var(--accent)]" />
         </div>
-      </Transition>
+        <div>
+          <h1 className="text-2xl font-bold text-[var(--text)]">Leaderboard</h1>
+          <p className="text-sm text-[var(--text)]/60">Top traders ranked by net worth</p>
+        </div>
+      </div>
 
-      <Transition
-        show={loading}
-        enter="transition ease-out duration-300"
-        enterFrom="opacity-0"
-        enterTo="opacity-100"
-        leave="transition ease-in duration-200"
-        leaveFrom="opacity-100"
-        leaveTo="opacity-0"
-      >
-        <div className="overflow-x-auto">
-          <table className="min-w-full text-left border-collapse">
-            <thead>
-              <tr>
-                <th className="py-2 px-2 border-b border-[var(--accent)] text-sm md:text-base">Rank</th>
-                <th className="py-2 px-2 border-b border-[var(--accent)] text-sm md:text-base">User</th>
-                <th className="py-2 px-2 border-b border-[var(--accent)] text-sm md:text-base">Balance</th>
-                <th className="py-2 px-2 border-b border-[var(--accent)] text-sm md:text-base">Portfolio</th>
-                <th className="py-2 px-2 border-b border-[var(--accent)] text-sm md:text-base">Net Worth</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {[...Array(10)].map((_, i) => (
-                <tr key={i} className="border-b border-[var(--accent)] animate-pulse">
-                  <td className="p-2">
-                    <div className="h-4 w-6 bg-gray-300 rounded mx-auto"></div>
-                  </td>
-                  <td className="p-2">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-gray-300"></div>
-                      <div className="h-4 w-24 bg-gray-300 rounded"></div>
-                    </div>
-                  </td>
-                  <td className="p-2">
-                    <div className="h-4 w-16 bg-gray-300 rounded"></div>
-                  </td>
-                  <td className="p-2">
-                    <div className="h-4 w-16 bg-gray-300 rounded"></div>
-                  </td>
-                  <td className="p-2">
-                    <div className="h-4 w-16 bg-gray-300 rounded"></div>
-                  </td>
+      <div className="bg-[var(--sidebar-bg)] border border-[var(--accent)]/20 rounded-xl overflow-hidden">
+        <Transition
+          show={!loading}
+          enter="transition ease-out duration-300"
+          enterFrom="opacity-0"
+          enterTo="opacity-100"
+          leave="transition ease-in duration-200"
+          leaveFrom="opacity-100"
+          leaveTo="opacity-0"
+        >
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-[var(--accent)]/10">
+                  <th className="py-4 px-6 text-left text-sm font-medium text-[var(--text)]/70">Rank</th>
+                  <th className="py-4 px-6 text-left text-sm font-medium text-[var(--text)]/70">Trader</th>
+                  <th className="py-4 px-6 text-right text-sm font-medium text-[var(--text)]/70">Balance</th>
+                  <th className="py-4 px-6 text-right text-sm font-medium text-[var(--text)]/70">Portfolio Value</th>
+                  <th className="py-4 px-6 text-right text-sm font-medium text-[var(--text)]/70">Net Worth</th>
                 </tr>
+              </thead>
+
+              <tbody className="divide-y divide-[var(--accent)]/10">
+                {leaders.map((user, index) => {
+                  const rankColors = {
+                    0: "bg-yellow-500/10 text-yellow-500",
+                    1: "bg-gray-400/10 text-gray-400",
+                    2: "bg-orange-500/10 text-orange-500"
+                  };
+
+                  return (
+                    <tr key={user.id} className="hover:bg-[var(--accent)]/5 transition-colors">
+                      <td className="py-4 px-6 whitespace-nowrap">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${rankColors[index as keyof typeof rankColors] || "bg-[var(--accent)]/10 text-[var(--text)]"
+                          }`}>
+                          {index + 1}
+                        </div>
+                      </td>
+                      <td className="py-4 px-6 whitespace-nowrap">
+                        <div className="flex items-center gap-3">
+                          {user.photoURL ? (
+                            <img src={user.photoURL} alt="" className="w-10 h-10 rounded-full object-cover" />
+                          ) : (
+                            <div className="w-10 h-10 rounded-full bg-[var(--accent)]/10 flex items-center justify-center">
+                              <span className="text-lg font-medium text-[var(--accent)]">
+                                {user.displayName.charAt(0).toUpperCase()}
+                              </span>
+                            </div>
+                          )}
+                          <div>
+                            <div className="font-medium text-[var(--text)]">{user.displayName}</div>
+                            <div className="text-sm text-[var(--text)]/60">
+                              {index === 0 ? "🏆 Top Trader" : index === 1 ? "🥈 Runner Up" : index === 2 ? "🥉 Third Place" : ""}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-4 px-6 text-right whitespace-nowrap">
+                        <div className="text-[var(--text)]">${user.balance.toLocaleString()}</div>
+                      </td>
+                      <td className="py-4 px-6 text-right whitespace-nowrap">
+                        <div className="text-[var(--text)]">${user.portfolioValue.toLocaleString()}</div>
+                      </td>
+                      <td className="py-4 px-6 text-right whitespace-nowrap">
+                        <div className="font-medium text-[var(--text)]">${user.netWorth.toLocaleString()}</div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </Transition>
+
+        <Transition
+          show={loading}
+          enter="transition ease-out duration-300"
+          enterFrom="opacity-0"
+          enterTo="opacity-100"
+          leave="transition ease-in duration-200"
+          leaveFrom="opacity-100"
+          leaveTo="opacity-0"
+        >
+          <div className="p-6">
+            <div className="space-y-4">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="flex items-center gap-4 animate-pulse">
+                  <div className="w-8 h-8 rounded-full bg-[var(--accent)]/10" />
+                  <div className="flex-1">
+                    <div className="h-4 w-24 bg-[var(--accent)]/10 rounded mb-2" />
+                    <div className="h-3 w-32 bg-[var(--accent)]/10 rounded" />
+                  </div>
+                  <div className="h-4 w-20 bg-[var(--accent)]/10 rounded" />
+                </div>
               ))}
-            </tbody>
-          </table>
-        </div>
-      </Transition>
+            </div>
+          </div>
+        </Transition>
+      </div>
     </div>
   );
 };
