@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { GoogleAuthProvider, signInWithPopup, setPersistence, browserSessionPersistence } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
 import { auth } from "../lib/firebase";
 import { Transition } from "@headlessui/react";
@@ -12,8 +12,11 @@ const Login = () => {
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     setError("");
-    const provider = new GoogleAuthProvider();
     try {
+      // Set session persistence before sign in
+      await setPersistence(auth, browserSessionPersistence);
+
+      const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
       navigate("/");
     } catch (error: any) {
